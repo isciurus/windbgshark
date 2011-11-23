@@ -27,7 +27,6 @@
     <ClInclude Include="callout.h" />
     <ClInclude Include="ctl.h" />
     <ClInclude Include="debug.h" />
-    <ClInclude Include="la_engine.h" />
     <ClInclude Include="register.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windbgshark_drv.h" />
