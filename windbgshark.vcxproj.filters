@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{ce9f0b62-b8da-4802-97be-c24279c6513c}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Resource files">
+      <UniqueIdentifier>{e32d1537-ea51-46f2-983a-6f7ad46f2823}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Header files">
+      <UniqueIdentifier>{d10f58d9-77fd-417c-bb61-e44d419d743f}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="drv\log.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="drv\debug.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="drv\ctl_codes.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="drv\ctl.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="drv\callout.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="drv\analyzer.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="drv\utils.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="drv\register.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="drv\windbgshark_drv.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="drv\debug.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="drv\ctl.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="drv\callout.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="drv\analyzer.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="drv\utils.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="drv\register.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="drv\log.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="drv\windbgshark_drv.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="drv\sources" />
+    <None Include="drv\drv_deploy.bat" />
+    <None Include="drv\windbgshark_drv.inf" />
+  </ItemGroup>
+</Project>

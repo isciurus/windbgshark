@@ -1,0 +1,26 @@
+TARGETNAME=windbgshark
+TARGETTYPE=DYNLINK
+
+_NT_TARGET_VERSION=$(_NT_TARGET_VERSION_WINXP)
+
+DLLENTRY=_DllMainCRTStartup
+
+INCLUDES = dbgsdk\inc;$(INCLUDES)
+DBGSDK_LIB_PATH = dbgsdk\lib\$(TARGET_DIRECTORY)
+
+
+TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
+           $(DBGSDK_LIB_PATH)\dbgeng.lib \
+		   $(SDK_LIB_PATH)\Shell32.lib
+
+USE_MSVCRT=1
+
+UMTYPE=windows
+
+MSC_WARNING_LEVEL = /W4
+
+SOURCES= dbgexts.cpp		\
+         windbgshark.cpp	\
+		 pcap.cpp			\
+		 utils.cpp			\
+         windbgshark.rc

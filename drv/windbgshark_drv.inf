@@ -1,0 +1,58 @@
+[Version]
+signature   =   "$Windows NT$"
+Provider 	=   %provider%
+DriverVer   =   11/18/2011,VER_P5000.1
+
+[DestinationDirs]
+DefaultDestDir	        = 12
+windbgshark_drv.DriverFiles      = 12 			;%windir%\system32\drivers
+
+;;
+;; Default install sections
+;;
+
+[DefaultInstall]
+OptionDesc          = %windbgshark_drvServiceDesc%
+CopyFiles           = windbgshark_drv.DriverFiles
+
+[DefaultInstall.Services]
+AddService          = %windbgshark_drvServiceName%,,windbgshark_drv.Service
+
+;;
+;; Default uninstall sections
+;;
+
+[DefaultUninstall]
+DelFiles   = windbgshark_drv.DriverFiles
+
+[DefaultUninstall.Services]
+DelService = windbgshark_drv,0x200		; Flags note to stop service first
+
+;
+; Services Section
+;
+
+[windbgshark_drv.Service]
+DisplayName      = %windbgshark_drvServiceName%
+Description      = %windbgshark_drvServiceDesc%
+ServiceBinary    = %12%\windbgshark_drv.sys  	;%systemroot%\system32\drivers\windbgshark_drv.sys
+ServiceType      = 1					;SERVICE_KERNEL_DRIVER
+StartType        = 2					;SERVICE_AUTO_START
+ErrorControl     = 1					;SERVICE_ERROR_NORMAL
+
+;
+; Copy Files
+;
+
+[windbgshark_drv.DriverFiles]
+windbgshark_drv.sys,,,0x00000040   ; COPYFLG_OVERWRITE_OLDER_ONLY
+
+;;
+;; String Section
+;;
+
+[Strings]
+provider              = "isciurus"
+windbgshark_drvServiceDesc  = "Windbgshark packet capture engine"
+windbgshark_drvServiceName  = "windbgshark_drv"
+windbgshark_drvRegistry     = "system\currentcontrolset\services\windbgshark_drv"

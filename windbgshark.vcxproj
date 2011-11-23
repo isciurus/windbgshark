@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="drv\analyzer.h" />
+    <ClInclude Include="drv\callout.h" />
+    <ClInclude Include="drv\ctl.h" />
+    <ClInclude Include="drv\ctl_codes.h" />
+    <ClInclude Include="drv\debug.h" />
+    <ClInclude Include="drv\windbgshark_drv.h" />
+    <ClInclude Include="drv\log.h" />
+    <ClInclude Include="drv\register.h" />
+    <ClInclude Include="drv\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="drv\windbgshark_drv.c" />
+    <ClCompile Include="drv\analyzer.c" />
+    <ClCompile Include="drv\callout.c" />
+    <ClCompile Include="drv\ctl.c" />
+    <ClCompile Include="drv\debug.c" />
+    <ClCompile Include="drv\log.c" />
+    <ClCompile Include="drv\register.c" />
+    <ClCompile Include="drv\utils.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="drv\drv_deploy.bat" />
+    <None Include="drv\windbgshark_drv.inf" />
+    <None Include="drv\sources" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{33B703E8-DB3B-42F3-84D9-7D5AE795F827}</ProjectGuid>
+    <Keyword>MakeFileProj</Keyword>
+    <ProjectName>callout_driver</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Makefile</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ConfigurationType>Makefile</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ConfigurationType>Makefile</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <NMakeBuildCommandLine>call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk win7
+cd /d $(ProjectDir)
+build</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_x86</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_x86
+call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk win7
+cd /d $(ProjectDir)
+build</NMakeReBuildCommandLine>
+    <IntDir>$(ProjectDir)\objchk_win7_x86</IntDir>
+    <OutDir>$(ProjectDir)\objchk_win7_x86</OutDir>
+    <NMakeOutput>$(ProjectDir)\objchk_win7_x86\i386\windbgshark.sys</NMakeOutput>
+    <NMakePreprocessorDefinitions>WIN32;_CONSOLE;_X86_;_DDK_;_DEBUG;DBG=1;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(WDKPATH)\inc\ddk;$(WDKPATH)\inc\api;$(WDKPATH)\inc\crt;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <NMakeBuildCommandLine>call $(WDKPATH)\bin\setenv.bat $(WDKPATH) fre win7
+cd /d $(ProjectDir)
+build</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>rmdir /s /q $(ProjectDir)\objfre_win7_x86</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>rmdir /s /q $(ProjectDir)\objfre_win7_x86
+call $(WDKPATH)\bin\setenv.bat $(WDKPATH) fre win7
+cd /d $(ProjectDir)
+build</NMakeReBuildCommandLine>
+    <IntDir>$(ProjectDir)\objfre_win7_x86</IntDir>
+    <OutDir>$(ProjectDir)\objfre_win7_x86</OutDir>
+    <NMakeOutput>$(ProjectDir)\objfre_win7_x86\i386\windbgshark.sys</NMakeOutput>
+    <NMakePreprocessorDefinitions>WIN32;_CONSOLE;_X86_;_DDK_;_NDEBUG;DBG=0;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(WDKPATH)\inc\ddk;$(WDKPATH)\inc\api;$(WDKPATH)\inc\crt;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <NMakeBuildCommandLine>call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk x64 win7
+cd /d $(ProjectDir)
+build</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_amd64</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_amd64
+call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk AMD64 win7
+cd /d $(ProjectDir)
+build</NMakeReBuildCommandLine>
+    <IntDir>$(ProjectDir)\objchk_win7_amd64</IntDir>
+    <OutDir>$(ProjectDir)\objchk_win7_amd64</OutDir>
+    <NMakeOutput>$(ProjectDir)\objchk_win7_amd64\amd64\windbgshark.sys</NMakeOutput>
+    <NMakePreprocessorDefinitions>WIN32;_CONSOLE;_AMD64_;_DDK_;_DEBUG;DBG=1;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(WDKPATH)\inc\ddk;$(WDKPATH)\inc\api;$(WDKPATH)\inc\crt;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <NMakeBuildCommandLine>call $(WDKPATH)\bin\setenv.bat $(WDKPATH) fre AMD64 win7
+cd /d $(ProjectDir)
+build</NMakeBuildCommandLine>
+    <NMakeCleanCommandLine>rmdir /s /q $(ProjectDir)\objfre_win7_amd64</NMakeCleanCommandLine>
+    <NMakeReBuildCommandLine>rmdir /s /q $(ProjectDir)\objfre_win7_amd64
+call $(WDKPATH)\bin\setenv.bat $(WDKPATH) fre AMD64 win7
+cd /d $(ProjectDir)
+build</NMakeReBuildCommandLine>
+    <IntDir>$(ProjectDir)\objfre_win7_amd64</IntDir>
+    <OutDir>$(ProjectDir)\objfre_win7_amd64</OutDir>
+    <NMakeOutput>$(ProjectDir)\objfre_win7_amd64\amd64\windbgshark.sys</NMakeOutput>
+    <NMakePreprocessorDefinitions>WIN32;_CONSOLE;_AMD64_;_DDK_;_NDEBUG;DBG=0;$(NMakePreprocessorDefinitions)</NMakePreprocessorDefinitions>
+    <NMakeIncludeSearchPath>$(WDKPATH)\inc\ddk;$(WDKPATH)\inc\api;$(WDKPATH)\inc\crt;$(NMakeIncludeSearchPath)</NMakeIncludeSearchPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
