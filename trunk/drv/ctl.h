@@ -1,0 +1,1 @@
+NTSTATUS drvCtlInit(PDRIVER_OBJECT driverObject);

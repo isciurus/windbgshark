@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{02a1cde6-bf08-45e4-83fd-e3de41142713}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Resource files">
+      <UniqueIdentifier>{e3831e62-1531-41f2-80bb-a23556e1272a}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Header files">
+      <UniqueIdentifier>{8d865064-570f-44d3-9264-b24b3e7e9543}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sources" />
+    <None Include="windbgshark_drv.inf" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="la_engine.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="debug.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="ctl.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="callout.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="analyzer.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="windbgshark_drv.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="register.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="debug.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="ctl.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="callout.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="analyzer.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="register.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="windbgshark_drv.c">
+      <Filter>Source files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
