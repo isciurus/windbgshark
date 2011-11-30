@@ -69,7 +69,7 @@ Return Value:
     // suppress "The 'MajorFunction' member of _DRIVER_OBJECT should not be accessed by a driver warnings"                        
     #pragma warning(push)
     #pragma warning(disable:28175) 
-    for (l = 0; l < IRP_MJ_MAXIMUM_FUNCTION; l++)
+    for (l = 0; l <= IRP_MJ_MAXIMUM_FUNCTION; l++)
     {
         driverObject->MajorFunction[l] = drvCtlDispatchRequest;
     }
