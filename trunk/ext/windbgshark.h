@@ -28,5 +28,5 @@
 
 #define myDprintf if(Debug)dprintf
 
-void windbgsharkInit();
+HRESULT windbgsharkInit();
 void windbgsharkUninitialize();

@@ -126,19 +126,19 @@ typedef struct tcp_hdr_s {
 } tcp_hdr_t;
 
 
-void openPcap()
+HRESULT openPcap()
 {
 	WCHAR tmpDir[MAX_PATH];
 	if(GetTempPathW(sizeof(tmpDir) / sizeof(WCHAR), tmpDir) == 0)
 	{
 		myDprintf("openPcap: error\n");
-		return;
+		return E_FAIL;
 	}
 
 	if(GetTempFileNameW(tmpDir, L"wdbgshrk_", 0, pcapFilepath) == 0)
 	{
 		myDprintf("openPcap: error\n");
-		return;
+		return E_FAIL;
 	}
 
 	hSharkPcap = CreateFileW(
@@ -154,7 +154,7 @@ void openPcap()
 	{
 		myDprintf("openPcap: error\n");
 		printLastError();
-		return;
+		return E_FAIL;
 	}
 
 	pcap_hdr_t pcap_hdr;
@@ -175,6 +175,8 @@ void openPcap()
 		NULL);
 
 	myDprintf("openPcap: %d bytes written\n", cbWritten);
+
+	return S_OK;
 }
 
 void closePcap()
@@ -183,16 +185,16 @@ void closePcap()
 	hSharkPcap = INVALID_HANDLE_VALUE;
 }
 
-void startWireshark()
+HRESULT startWireshark()
 {
 	SHELLEXECUTEINFOW info;
 	ZeroMemory(&info, sizeof(info));
 
 	info.cbSize = sizeof(SHELLEXECUTEINFOA);
-	info.fMask = SEE_MASK_NOCLOSEPROCESS;
+	info.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_DOENVSUBST;
 	info.hwnd = NULL;
 	info.lpVerb = NULL;
-	info.lpFile = L"C:\\Program files\\Wireshark\\Wireshark.exe";
+	info.lpFile = L"Wireshark.exe";
 	info.lpParameters = pcapFilepath;
 	info.nShow = SW_SHOWNORMAL;
 	info.lpIDList = NULL;
@@ -201,11 +203,30 @@ void startWireshark()
 	info.dwHotKey = NULL;
 	info.hIcon = NULL;
 
-	ShellExecuteExW(&info);
+	if(!ShellExecuteExW(&info))
+	{
+		info.lpFile = L"%ProgramFiles%\\Wireshark\\Wireshark.exe";
+
+		if(!ShellExecuteExW(&info))
+		{
+			info.lpFile = L"%%ProgramW6432%%\\Wireshark\\Wireshark.exe";
+
+			if(!ShellExecuteExW(&info))
+			{
+				dprintf("Error starting Wireshark. Please, ensure that Wireshark.exe "
+						"is located at %%ProgramFiles%%\\Wireshark, "
+						"%%ProgramW6432%%\\Wireshark or enywhere in %%PATH%%\n");
+				
+				return E_FAIL;
+			}
+		}
+	}
 
 	hWiresharkProcess = info.hProcess;
 
 	myDprintf("startWireshark: hWiresharkProcess = %p\n", hWiresharkProcess);
+
+	return S_OK;
 }
 
 void stopWireshark()

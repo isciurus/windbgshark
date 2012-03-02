@@ -142,7 +142,7 @@ DebugExtensionInitialize(PULONG Version, PULONG Flags)
         Hr = pDebugControl->GetWindbgExtensionApis64(&ExtensionApis);
     }
 
-	windbgsharkInit();
+	Hr = windbgsharkInit();
 
     return Hr;
 }
