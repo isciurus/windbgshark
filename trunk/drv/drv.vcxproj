@@ -102,8 +102,7 @@ build</NMakeReBuildCommandLine>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <NMakeBuildCommandLine>call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk x64 win7
 cd /d $(ProjectDir)
-build
-drv_deploy.bat</NMakeBuildCommandLine>
+build</NMakeBuildCommandLine>
     <NMakeCleanCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_amd64</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_amd64
 call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk AMD64 win7

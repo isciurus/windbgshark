@@ -19,9 +19,6 @@
     <None Include="windbgshark_drv.inf" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="la_engine.h">
-      <Filter>Header files</Filter>
-    </ClInclude>
     <ClInclude Include="debug.h">
       <Filter>Header files</Filter>
     </ClInclude>
