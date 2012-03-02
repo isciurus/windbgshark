@@ -26,7 +26,7 @@
 *
 */
 
-void openPcap();
+HRESULT openPcap();
 void closePcap();
 void fixCurrentPcapSize();
 void composePcapRecord();
@@ -34,7 +34,7 @@ void composePcapRecord();
 void feedPcapWatchdog();
 void terminateWatchdog();
 
-void startWireshark();
+HRESULT startWireshark();
 void stopWireshark();
 
 void showPacket();

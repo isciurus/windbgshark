@@ -47,22 +47,36 @@ HRESULT setBreakpoints(PDEBUG_CONTROL Control);
 HRESULT removeBreakpoints(PDEBUG_CONTROL Control);
 
 BOOL modeStepTrace = FALSE;
-BOOL Debug = FALSE;
+BOOL Debug = TRUE;
 
 #undef _CTYPE_DISABLE_MACROS
 
-void windbgsharkInit()
+HRESULT windbgsharkInit()
 {
+	HRESULT result = S_OK;
+
 	myDprintf("windbgsharkInit...\n");
 
 	myDprintf("setBreakpoints...\n");
-	setBreakpoints(pDebugControl);
+	result = setBreakpoints(pDebugControl);
+	if(result != S_OK)
+	{
+		return result;
+	}
 
 	myDprintf("openPcap...\n");
-	openPcap();
+	result = openPcap();
+	if(result != S_OK)
+	{
+		return result;
+	}
 
 	myDprintf("starting wireshark...\n");
-	startWireshark();
+	result = startWireshark();
+	if(result != S_OK)
+	{
+		return result;
+	}
 
 	myDprintf("loading symbols for the driver\n");
 	pDebugControl->Execute(
@@ -76,8 +90,11 @@ void windbgsharkInit()
 
 	if(hWatchdogTerminateEvent == NULL)
 	{
-		// unload?
+		dprintf("Unable to create hWatchdogTerminateEvent\n");
+		return E_FAIL;
 	}
+
+	return S_OK;
 }
 
 void windbgsharkUninitialize()
