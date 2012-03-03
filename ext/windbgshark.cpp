@@ -417,7 +417,7 @@ setBreakpoints(PDEBUG_CONTROL Control)
 		DEBUG_ANY_ID,
 		&bpIn);
 
-	result = bpIn->SetOffsetExpression("windbgshark_drv!inspectPacket+0xd4");
+	result = bpIn->SetOffsetExpression("windbgshark_drv!onpacketinspect_stub");
 
 	if(modeStepTrace)
 	{
@@ -435,7 +435,7 @@ setBreakpoints(PDEBUG_CONTROL Control)
 		DEBUG_ANY_ID,
 		&bpOut);
 
-	result = bpOut->SetOffsetExpression("windbgshark_drv!inspectPacket+0xcf");
+	result = bpOut->SetOffsetExpression("windbgshark_drv!onpacketinject_stub");
 	result = bpOut->SetCommand("!onpacketinject; g");
 	result = bpOut->SetFlags(DEBUG_BREAKPOINT_ENABLED);
 
