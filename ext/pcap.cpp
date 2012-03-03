@@ -131,13 +131,13 @@ HRESULT openPcap()
 	WCHAR tmpDir[MAX_PATH];
 	if(GetTempPathW(sizeof(tmpDir) / sizeof(WCHAR), tmpDir) == 0)
 	{
-		myDprintf("openPcap: error\n");
+		myDprintf("[windbgshark] openPcap: error\n");
 		return E_FAIL;
 	}
 
 	if(GetTempFileNameW(tmpDir, L"wdbgshrk_", 0, pcapFilepath) == 0)
 	{
-		myDprintf("openPcap: error\n");
+		myDprintf("[windbgshark] openPcap: error\n");
 		return E_FAIL;
 	}
 
@@ -152,7 +152,7 @@ HRESULT openPcap()
 
 	if (hSharkPcap == INVALID_HANDLE_VALUE)
 	{
-		myDprintf("openPcap: error\n");
+		myDprintf("[windbgshark] openPcap: error\n");
 		printLastError();
 		return E_FAIL;
 	}
@@ -174,7 +174,7 @@ HRESULT openPcap()
 		&cbWritten,
 		NULL);
 
-	myDprintf("openPcap: %d bytes written\n", cbWritten);
+	myDprintf("[windbgshark] openPcap: %d bytes written\n", cbWritten);
 
 	return S_OK;
 }
@@ -224,7 +224,7 @@ HRESULT startWireshark()
 
 	hWiresharkProcess = info.hProcess;
 
-	myDprintf("startWireshark: hWiresharkProcess = %p\n", hWiresharkProcess);
+	myDprintf("[windbgshark] startWireshark: hWiresharkProcess = %p\n", hWiresharkProcess);
 
 	return S_OK;
 }
@@ -242,11 +242,11 @@ void fixCurrentPcapSize()
 	LARGE_INTEGER liPrevPcapSize;
 	BOOL result;
 
-	// myDprintf("fixCurrentPcapSize: enter\n");
+	// myDprintf("[windbgshark] fixCurrentPcapSize: enter\n");
 
 	if(hSharkPcap == INVALID_HANDLE_VALUE)
 	{
-		myDprintf("hSharkPcap: error\n");
+		myDprintf("[windbgshark] hSharkPcap: error\n");
 		printLastError();
 		return;
 	}
@@ -256,7 +256,7 @@ void fixCurrentPcapSize()
 	// Pray for dump < 4gb
 	prevPcapSize = liPrevPcapSize.LowPart;
 
-	// myDprintf("prevPcapSize = %p, result = %d\n", prevPcapSize, result);
+	// myDprintf("[windbgshark] prevPcapSize = %p, result = %d\n", prevPcapSize, result);
 }
 
 void composePcapRecord()
@@ -288,7 +288,7 @@ void composePcapRecord()
 
 	if(dataLength == 0)
 	{
-		myDprintf("composePcapRecord: dataLength == 0, continue...\n");
+		myDprintf("[windbgshark] composePcapRecord: dataLength == 0, continue...\n");
 		goto Cleanup;
 	}
 
@@ -365,9 +365,9 @@ void composePcapRecord()
 	tcp_hdr.window = 0x100;
 	memcpy(pcapEntry + sizeof(pcaprec_hdr) + sizeof(ether_hdr) + sizeof(ip_hdr), &tcp_hdr, sizeof(tcp_hdr));
 
-	// myDprintf("dataRva = %p\n", dataRva);
-	// myDprintf("pcapEntry = %x\n", pcapEntry);
-	// myDprintf("buffer = %x\n", pcapEntry + sizeof(pcaprec_hdr) + sizeof(ether_hdr) + sizeof(ip_hdr) + sizeof(tcp_hdr));
+	// myDprintf("[windbgshark] dataRva = %p\n", dataRva);
+	// myDprintf("[windbgshark] pcapEntry = %x\n", pcapEntry);
+	// myDprintf("[windbgshark] buffer = %x\n", pcapEntry + sizeof(pcaprec_hdr) + sizeof(ether_hdr) + sizeof(ip_hdr) + sizeof(tcp_hdr));
 
 	if(pDebugDataSpaces->ReadVirtual(
 		dataRva,
@@ -378,11 +378,11 @@ void composePcapRecord()
 		goto Cleanup;
 	}
 
-	// myDprintf("feedPcapWatchdog: ReadVirtual result = %d.n", result);
+	// myDprintf("[windbgshark] feedPcapWatchdog: ReadVirtual result = %d.n", result);
 
 	if (hSharkPcap == INVALID_HANDLE_VALUE)
 	{
-		// myDprintf("feedPcapWatchdog: error\n");
+		// myDprintf("[windbgshark] feedPcapWatchdog: error\n");
 		printLastError();
 
 		goto Cleanup;
@@ -404,7 +404,7 @@ void composePcapRecord()
 
 	SetEndOfFile(hSharkPcap);
 
-	myDprintf("feedPcapWatchdog: wrote %d byte at offset %d\n", cbWritten, prevPcapSize);
+	myDprintf("[windbgshark] feedPcapWatchdog: wrote %d byte at offset %d\n", cbWritten, prevPcapSize);
 
 
 Cleanup:
@@ -430,16 +430,16 @@ Cleanup:
 
 void feedPcapWatchdog()
 {
-	myDprintf("feedPcapWatchdog: enter\n");
+	myDprintf("[windbgshark] feedPcapWatchdog: enter\n");
 
 	do
 	{
-		myDprintf("feedPcapWatchdog: loop start\n");
+		myDprintf("[windbgshark] feedPcapWatchdog: loop start\n");
 		composePcapRecord();
 	}
 	while(WaitForSingleObject(hWatchdogTerminateEvent, 1000) != WAIT_OBJECT_0);
 
-	myDprintf("feedPcapWatchdog: return\n");
+	myDprintf("[windbgshark] feedPcapWatchdog: return\n");
 
 	return;
 }
@@ -448,24 +448,24 @@ void terminateWatchdog()
 {
 	DWORD dwWaitResult = 0;
 
-	myDprintf("terminateWatchdog: enter\n");
+	myDprintf("[windbgshark] terminateWatchdog: enter\n");
 	
 
 	if(hWatchdogTerminateEvent != INVALID_HANDLE_VALUE)
 	{
-		myDprintf("terminateWatchdog: SetEvent\n");
+		myDprintf("[windbgshark] terminateWatchdog: SetEvent\n");
 		SetEvent(hWatchdogTerminateEvent);
 	}
 
 	if(hPcapWatchdog != INVALID_HANDLE_VALUE)
 	{
-		myDprintf("terminateWatchdog: WaitForSingleObject\n");
+		myDprintf("[windbgshark] terminateWatchdog: WaitForSingleObject\n");
 
 		dwWaitResult = WaitForSingleObject(hPcapWatchdog, 3000);
 
 		if(dwWaitResult != WAIT_OBJECT_0)
 		{
-			myDprintf("terminateWatchdog: thread did not terminate by self, now killing it\n");
+			myDprintf("[windbgshark] terminateWatchdog: thread did not terminate by self, now killing it\n");
 
 			TerminateThread(hPcapWatchdog, 0);
 		}

@@ -62,42 +62,42 @@ HRESULT windbgsharkInit()
 {
 	HRESULT result = S_OK;
 
-	myDprintf("windbgsharkInit...\n");
+	myDprintf("[windbgshark] windbgsharkInit...\n");
 
-	myDprintf("prepareDriverModule...\n");
+	myDprintf("[windbgshark] prepareDriverModule...\n");
 	result = prepareDriverModule();
 	if(result != S_OK)
 	{
 		return result;
 	}
 
-	myDprintf("setBreakpoints...\n");
+	myDprintf("[windbgshark] setBreakpoints...\n");
 	result = setBreakpoints(pDebugControl);
 	if(result != S_OK)
 	{
 		return result;
 	}
 
-	myDprintf("openPcap...\n");
+	myDprintf("[windbgshark] openPcap...\n");
 	result = openPcap();
 	if(result != S_OK)
 	{
 		return result;
 	}
 
-	myDprintf("starting wireshark...\n");
+	myDprintf("[windbgshark] starting wireshark...\n");
 	result = startWireshark();
 	if(result != S_OK)
 	{
 		return result;
 	}
 
-	myDprintf("Creating sync objects...\n");
+	myDprintf("[windbgshark] Creating sync objects...\n");
 	hWatchdogTerminateEvent = CreateEvent(NULL, FALSE, FALSE, NULL); 
 
 	if(hWatchdogTerminateEvent == NULL)
 	{
-		dprintf("Unable to create hWatchdogTerminateEvent\n");
+		dprintf("[windbgshark] Unable to create hWatchdogTerminateEvent\n");
 		return E_FAIL;
 	}
 
@@ -106,13 +106,13 @@ HRESULT windbgsharkInit()
 
 void windbgsharkUninitialize()
 {
-	myDprintf("windbgsharkUninitialize: calling removeBreakpoints...\n");
+	myDprintf("[windbgshark] windbgsharkUninitialize: calling removeBreakpoints...\n");
 	removeBreakpoints(pDebugControl);
 
-	myDprintf("windbgsharkUninitialize: calling hPcapWatchdog...\n");
+	myDprintf("[windbgshark] windbgsharkUninitialize: calling hPcapWatchdog...\n");
 	terminateWatchdog();
 
-	myDprintf("windbgsharkUninitialize: releasing the objects...\n");
+	myDprintf("[windbgshark] windbgsharkUninitialize: releasing the objects...\n");
 	if(pDebugClient) pDebugClient->Release();
     if(pDebugControl) pDebugControl->Release();
 
@@ -146,7 +146,7 @@ help(PDEBUG_CLIENT4 Client, PCSTR args)
 
 void printIncorrectArgs(PCSTR args)
 {
-	dprintf("Sorry, cannot parse arguments: %s", args);
+	dprintf("[windbgshark] Sorry, cannot parse arguments: %s", args);
 }
 
 HRESULT CALLBACK
@@ -245,34 +245,34 @@ strace(PDEBUG_CLIENT4 Client, PCSTR args)
 {
 	INIT_API();
 	
-	// myDprintf("strace: args = %s (%p), strlen(args) = %d, strcmp(args, \"on\") = %d\n", args, args, strlen(args), strcmp(args, "on"));
+	// myDprintf("[windbgshark] strace: args = %s (%p), strlen(args) = %d, strcmp(args, \"on\") = %d\n", args, args, strlen(args), strcmp(args, "on"));
 
 	if(args != NULL && strlen(args) > 0)
 	{
 		if(strlen(args) == 2 && strcmp(args, "on") == 0)
 		{
-			dprintf("enabled packet step tracing (break)\n");
+			dprintf("[windbgshark] enabled packet step tracing (break)\n");
 			modeStepTrace = TRUE;
 			bpIn->SetCommand("!onpacketinspect; .printf \"!packet\\n\"; !packet");
 		}
 		else if(strlen(args) == 3 && strcmp(args, "off") == 0)
 		{
-			dprintf("disabled packet step tracing (pass-through)\n");
+			dprintf("[windbgshark] disabled packet step tracing (pass-through)\n");
 			modeStepTrace = FALSE;
 			bpIn->SetCommand("!onpacketinspect; g");
 		}
 	}
 	else
 	{
-		dprintf("packet step tracing - ");
+		dprintf("[windbgshark] packet step tracing - ");
 
 		if(modeStepTrace)
 		{
-			dprintf("enabled (break)\n");
+			dprintf("[windbgshark] enabled (break)\n");
 		}
 		else
 		{
-			dprintf("disabled (pass-through)\n");
+			dprintf("[windbgshark] disabled (pass-through)\n");
 		}
 	}
 
@@ -286,7 +286,7 @@ onpacketinspect(PDEBUG_CLIENT4 Client, PCSTR args)
 {
 	INIT_API();
 
-	myDprintf("onpacketinspect: Enter----------------------------------------\n");
+	myDprintf("[windbgshark] onpacketinspect: Enter----------------------------------------\n");
 
 	fixCurrentPcapSize();
 
@@ -310,7 +310,7 @@ onpacketinspect(PDEBUG_CLIENT4 Client, PCSTR args)
 			0);	
 	}
 
-	myDprintf("onpacketinspect: Cleanup--------------------------------------\n");
+	myDprintf("[windbgshark] onpacketinspect: Cleanup--------------------------------------\n");
 	EXIT_API();
 
 	return S_OK;
@@ -321,11 +321,11 @@ onpacketinject(PDEBUG_CLIENT4 Client, PCSTR args)
 {
 	INIT_API();
 
-	myDprintf("onpacketinject: Enter---------------------------------------\n");
+	myDprintf("[windbgshark] onpacketinject: Enter---------------------------------------\n");
 
 	terminateWatchdog();
 
-	myDprintf("onpacketinject: Cleanup-------------------------------------\n");
+	myDprintf("[windbgshark] onpacketinject: Cleanup-------------------------------------\n");
 
 	EXIT_API();
 
@@ -342,11 +342,11 @@ prepareDriverModule()
 	ULONG path_size = 0;
 	pDebugSymbols->GetSymbolPath(symbol_path, sizeof(symbol_path), &path_size);
 
-	myDprintf("setDebugSymbols: symbol_path = %s\n", symbol_path);
+	myDprintf("[windbgshark] setDebugSymbols: symbol_path = %s\n", symbol_path);
 
 	CHAR modulePath[MAX_PATH] = {0};
 	GetModuleFileNameA(((HINSTANCE)&__ImageBase), modulePath, sizeof(modulePath));
-	myDprintf("module path: %s\n", modulePath);
+	myDprintf("[windbgshark] module path: %s\n", modulePath);
 
 	for(size_t i = strlen(modulePath) - 1; i > 0 && modulePath[i] != '\\'; i--)
 	{
@@ -379,7 +379,7 @@ prepareDriverModule()
 	}
 
 
-	myDprintf("checking if driver is loaded...\n");
+	myDprintf("[windbgshark] checking if driver is loaded...\n");
 	ULONG moduleIdx = 0;
 	pDebugSymbols->GetModuleByModuleName(
 		DRIVER_NAME,
@@ -388,11 +388,11 @@ prepareDriverModule()
 		NULL);
 	if(moduleIdx == NULL)
 	{
-		dprintf("driver module is not loaded yet! breakpoints will be deffered until "
+		dprintf("[windbgshark] driver module is not loaded yet! breakpoints will be deffered until "
 			"the module is loaded\n");
 	}
 
-	myDprintf("loading symbols for the driver\n");
+	myDprintf("[windbgshark] loading symbols for the driver\n");
 	pDebugControl->Execute(
 			DEBUG_OUTCTL_IGNORE | DEBUG_OUTCTL_NOT_LOGGED,
 				".reload "
