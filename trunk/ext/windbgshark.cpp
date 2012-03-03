@@ -36,12 +36,19 @@ extern IDebugControl* pDebugControl;
 
 #include "utils.h"
 
+// See TARGETNAME in ../drv/sources
+#define DRIVER_NAME "windbgshark_drv"
+
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+
 void printLastError();
 
 IDebugBreakpoint *bpIn, *bpOut;
 
 HANDLE hPcapWatchdog = INVALID_HANDLE_VALUE;
 HANDLE hWatchdogTerminateEvent = INVALID_HANDLE_VALUE;
+
+HRESULT prepareDriverModule();
 
 HRESULT setBreakpoints(PDEBUG_CONTROL Control);
 HRESULT removeBreakpoints(PDEBUG_CONTROL Control);
@@ -56,6 +63,13 @@ HRESULT windbgsharkInit()
 	HRESULT result = S_OK;
 
 	myDprintf("windbgsharkInit...\n");
+
+	myDprintf("prepareDriverModule...\n");
+	result = prepareDriverModule();
+	if(result != S_OK)
+	{
+		return result;
+	}
 
 	myDprintf("setBreakpoints...\n");
 	result = setBreakpoints(pDebugControl);
@@ -77,13 +91,6 @@ HRESULT windbgsharkInit()
 	{
 		return result;
 	}
-
-	myDprintf("loading symbols for the driver\n");
-	pDebugControl->Execute(
-			DEBUG_OUTCTL_IGNORE | DEBUG_OUTCTL_NOT_LOGGED,
-			".reload windbgshark_drv.sys",
-			DEBUG_EXECUTE_NOT_LOGGED);
-	
 
 	myDprintf("Creating sync objects...\n");
 	hWatchdogTerminateEvent = CreateEvent(NULL, FALSE, FALSE, NULL); 
@@ -321,6 +328,69 @@ onpacketinject(PDEBUG_CLIENT4 Client, PCSTR args)
 	myDprintf("onpacketinject: Cleanup-------------------------------------\n");
 
 	EXIT_API();
+
+	return S_OK;
+}
+
+HRESULT
+prepareDriverModule()
+{
+	IDebugSymbols *pDebugSymbols = NULL;
+	pDebugClient->QueryInterface(__uuidof(IDebugSymbols), (PVOID*) &pDebugSymbols);
+
+	CHAR symbol_path[MAX_PATH] = {0};
+	ULONG path_size = 0;
+	pDebugSymbols->GetSymbolPath(symbol_path, sizeof(symbol_path), &path_size);
+
+	myDprintf("setDebugSymbols: symbol_path = %s\n", symbol_path);
+
+	if(strstr(symbol_path, DRIVER_NAME) == NULL)
+	{
+		CHAR appendedSymbolPath[MAX_PATH] = {0};
+		GetModuleFileNameA(
+			((HINSTANCE)&__ImageBase),
+			appendedSymbolPath,
+			sizeof(appendedSymbolPath));	
+		
+		myDprintf("module path: %s\n", appendedSymbolPath);
+
+		for(size_t i = strlen(appendedSymbolPath) - 1; i > 0 && appendedSymbolPath[i] != '\\'; i--)
+		{
+			appendedSymbolPath[i] = 0;
+		}
+
+		myDprintf("symbol path to append: %s\n", appendedSymbolPath);
+		
+		pDebugSymbols->AppendSymbolPath(appendedSymbolPath);
+	}
+
+	myDprintf("checking if driver is loaded...\n");
+	ULONG moduleIdx = 0;
+	pDebugSymbols->GetModuleByModuleName(
+			DRIVER_NAME
+			".sys",
+		0,
+		&moduleIdx,
+		NULL);
+	if(moduleIdx == NULL)
+	{
+		dprintf("driver module is not loaded yet! breakpoints will be deffered until "
+			"the module is loaded\n");
+	}
+
+	myDprintf("loading symbols for the driver\n");
+	pDebugControl->Execute(
+			DEBUG_OUTCTL_IGNORE | DEBUG_OUTCTL_NOT_LOGGED,
+				".reload "
+				DRIVER_NAME
+				".sys",
+			DEBUG_EXECUTE_NOT_LOGGED);
+
+
+	if(pDebugSymbols != NULL)
+	{
+		pDebugSymbols->Release();
+	}
 
 	return S_OK;
 }
