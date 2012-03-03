@@ -344,31 +344,45 @@ prepareDriverModule()
 
 	myDprintf("setDebugSymbols: symbol_path = %s\n", symbol_path);
 
-	if(strstr(symbol_path, DRIVER_NAME) == NULL)
+	CHAR modulePath[MAX_PATH] = {0};
+	GetModuleFileNameA(((HINSTANCE)&__ImageBase), modulePath, sizeof(modulePath));
+	myDprintf("module path: %s\n", modulePath);
+
+	for(size_t i = strlen(modulePath) - 1; i > 0 && modulePath[i] != '\\'; i--)
+	{
+		modulePath[i] = 0;
+	}
+
+
+	// Are paths to symbols correctly set?
+
+	if(strstr(symbol_path, "windbgshark_drv_symbols_x86") == NULL)
 	{
 		CHAR appendedSymbolPath[MAX_PATH] = {0};
-		GetModuleFileNameA(
-			((HINSTANCE)&__ImageBase),
+		_snprintf(
 			appendedSymbolPath,
-			sizeof(appendedSymbolPath));	
-		
-		myDprintf("module path: %s\n", appendedSymbolPath);
-
-		for(size_t i = strlen(appendedSymbolPath) - 1; i > 0 && appendedSymbolPath[i] != '\\'; i--)
-		{
-			appendedSymbolPath[i] = 0;
-		}
-
-		myDprintf("symbol path to append: %s\n", appendedSymbolPath);
-		
+			sizeof(appendedSymbolPath),
+			"%swindbgshark_drv_symbols_x86",
+			modulePath);		
 		pDebugSymbols->AppendSymbolPath(appendedSymbolPath);
 	}
+
+	if(strstr(symbol_path, "windbgshark_drv_symbols_x64") == NULL)
+	{
+		CHAR appendedSymbolPath[MAX_PATH] = {0};
+		_snprintf(
+			appendedSymbolPath,
+			sizeof(appendedSymbolPath),
+			"%swindbgshark_drv_symbols_x64",
+			modulePath);		
+		pDebugSymbols->AppendSymbolPath(appendedSymbolPath);
+	}
+
 
 	myDprintf("checking if driver is loaded...\n");
 	ULONG moduleIdx = 0;
 	pDebugSymbols->GetModuleByModuleName(
-			DRIVER_NAME
-			".sys",
+		DRIVER_NAME,
 		0,
 		&moduleIdx,
 		NULL);
