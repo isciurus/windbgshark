@@ -182,6 +182,16 @@ AllocateAndInitializeStreamPendedPacket(
 	return pendedPacket;
 }
 
+volatile NTSTATUS onpacketinspect_stub(PENDED_PACKET* windbgsharkPacket)
+{
+	return STATUS_SUCCESS;
+}
+
+volatile NTSTATUS onpacketinject_stub(PENDED_PACKET* windbgsharkPacket)
+{
+	return STATUS_WAIT_1;
+}
+
 NTSTATUS inspectPacket(PENDED_PACKET* windbgsharkPacket)
 {
 	if(windbgsharkPacket->flowContext == NULL)
@@ -215,11 +225,9 @@ NTSTATUS inspectPacket(PENDED_PACKET* windbgsharkPacket)
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	// onpacketinspect
-	nop();
+	onpacketinspect_stub(windbgsharkPacket);
 
-	// onpacketinject
-	nop();
+	onpacketinject_stub(windbgsharkPacket);
 
 	return STATUS_SUCCESS;
 }

@@ -213,7 +213,7 @@ HRESULT startWireshark()
 
 			if(!ShellExecuteExW(&info))
 			{
-				dprintf("Error starting Wireshark. Please, ensure that Wireshark.exe "
+				dprintf("[windbgshark] Error starting Wireshark. Please, ensure that Wireshark.exe "
 						"is located at %%ProgramFiles%%\\Wireshark, "
 						"%%ProgramW6432%%\\Wireshark or enywhere in %%PATH%%\n");
 				
@@ -543,7 +543,7 @@ void setPacketSize(UINT32 size)
 
 	if(size > allocatedBytes)
 	{
-		dprintf("Sorry, too big packet size\n");
+		dprintf("[windbgshark] Sorry, too big packet size\n");
 		return;
 	}
 
@@ -586,7 +586,7 @@ void insertDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len)
 
 	if(len > allocatedBytes || dataLength + len > allocatedBytes)
 	{
-		dprintf("Sorry, too big packet\n");
+		dprintf("[windbgshark] Sorry, too big packet\n");
 		return;
 	}
 
