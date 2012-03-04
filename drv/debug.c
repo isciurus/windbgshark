@@ -106,15 +106,16 @@ NTSTATUS debugPacket(PENDED_PACKET*	packet)
 	
 #ifdef DEBUG
 	DbgPrintEx(
-			DPFLTR_IHVNETWORK_ID, 
-			DPFLTR_ERROR_LEVEL, 
-			"flowHandle: 0x%x, flags: 0x%x, src: %s:%d, dst: %s:%d \t", 
+			DPFLTR_IHVNETWORK_ID,
+			DPFLTR_ERROR_LEVEL,
+			"h:0x%I64x,\tfl:0x%x,\t%s:%d->%s:%d\tl=%d\td=",
 			packet->flowContext->flowHandle,
 			packet->flags,
 			ipv4SrcBufStr,
 			packet->srcPort, 
 			ipv4DstBufStr,
-			packet->dstPort);
+			packet->dstPort,
+			packet->dataLength);
 
 
 	dumpPacketData(packet->data, packet->dataLength);
