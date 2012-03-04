@@ -1,0 +1,18 @@
+EXPORTS
+
+;--------------------------------------------------------------------
+; These are the extensions exported by dll
+;--------------------------------------------------------------------
+	notifykdbg
+	kdbgnotifierdummy
+
+;--------------------------------------------------------------------
+;
+; these are the extension service functions provided for the debugger
+;
+;--------------------------------------------------------------------
+
+	DebugExtensionNotify
+	DebugExtensionInitialize
+	DebugExtensionUninitialize
+	_EFN_Analyze

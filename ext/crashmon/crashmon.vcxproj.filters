@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{8e69a586-ad4f-4d1a-a9b6-5505cc62ee0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource files">
+      <UniqueIdentifier>{05d24f60-388c-40d0-ac3a-d03901ef94b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dbgsdk">
+      <UniqueIdentifier>{7f3d071b-fbf6-4254-9efc-1fad7246820b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dbgsdk\inc">
+      <UniqueIdentifier>{3d5a0a3a-2a6a-4927-b47e-8e684a96163c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header files">
+      <UniqueIdentifier>{abdaf8d0-bee1-4303-98f4-61d931db4258}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="crashmon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dbgsdk\inc\engextcpp.cpp">
+      <Filter>dbgsdk\inc</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="crashmon.rc">
+      <Filter>Resource files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\dbgsdk\inc\dbghelp.h">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\engextcpp.hpp">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\extsfns.h">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\wdbgexts.h">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\dbgeng.h">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sources" />
+    <None Include="crashmon.def" />
+  </ItemGroup>
+</Project>
