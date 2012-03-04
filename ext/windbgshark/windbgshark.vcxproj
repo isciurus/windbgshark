@@ -46,7 +46,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DDC40A6E-3186-4B34-B329-2444F6C024A6}</ProjectGuid>
     <Keyword>MakeFileProj</Keyword>
-    <ProjectName>hostctl</ProjectName>
+    <ProjectName>ext_windbgshark</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
