@@ -22,7 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="sources" />
-    <None Include="C:\Program Files\Debugging Tools for Windows (x64)\sdk\samples\exts\makefile" />
     <None Include="windbgshark.def" />
   </ItemGroup>
   <ItemGroup>

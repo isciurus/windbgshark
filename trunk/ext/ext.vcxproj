@@ -26,7 +26,6 @@
     <ClCompile Include="windbgshark.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="C:\Program Files\Debugging Tools for Windows (x64)\sdk\samples\exts\makefile" />
     <None Include="windbgshark.def" />
     <None Include="sources" />
   </ItemGroup>
