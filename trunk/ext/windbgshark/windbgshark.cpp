@@ -26,7 +26,7 @@
 *
 */
 
-#include "dbgexts.h"
+#include "../dbgexts.h"
 extern IDebugClient* pDebugClient;
 extern IDebugControl* pDebugControl;
 
@@ -58,11 +58,11 @@ BOOL Debug = TRUE;
 
 #undef _CTYPE_DISABLE_MACROS
 
-HRESULT windbgsharkInit()
+HRESULT extensionInit()
 {
 	HRESULT result = S_OK;
 
-	myDprintf("[windbgshark] windbgsharkInit...\n");
+	myDprintf("[windbgshark] extensionInit...\n");
 
 	myDprintf("[windbgshark] prepareDriverModule...\n");
 	result = prepareDriverModule();
@@ -104,15 +104,15 @@ HRESULT windbgsharkInit()
 	return S_OK;
 }
 
-void windbgsharkUninitialize()
+void extensionUninitialize()
 {
-	myDprintf("[windbgshark] windbgsharkUninitialize: calling removeBreakpoints...\n");
+	myDprintf("[windbgshark] extensionUninitialize: calling removeBreakpoints...\n");
 	removeBreakpoints(pDebugControl);
 
-	myDprintf("[windbgshark] windbgsharkUninitialize: calling hPcapWatchdog...\n");
+	myDprintf("[windbgshark] extensionUninitialize: calling hPcapWatchdog...\n");
 	terminateWatchdog();
 
-	myDprintf("[windbgshark] windbgsharkUninitialize: releasing the objects...\n");
+	myDprintf("[windbgshark] extensionUninitialize: releasing the objects...\n");
 	if(pDebugClient) pDebugClient->Release();
     if(pDebugControl) pDebugControl->Release();
 

@@ -1,10 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source files">
-      <UniqueIdentifier>{ebfafee6-53d4-4f7d-991e-bff89b3aba77}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="Resource files">
       <UniqueIdentifier>{ea090d38-ed18-4764-a24b-68d6286c23bf}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
@@ -18,6 +14,10 @@
     </Filter>
     <Filter Include="dbgsdk\inc">
       <UniqueIdentifier>{e9f9bef7-5671-4cbe-96e6-387cba79728c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{ebfafee6-53d4-4f7d-991e-bff89b3aba77}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -36,42 +36,42 @@
     <ClCompile Include="windbgshark.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="dbgsdk\inc\engextcpp.cpp">
-      <Filter>dbgsdk\inc</Filter>
-    </ClCompile>
     <ClCompile Include="pcap.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
     <ClCompile Include="utils.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\dbgsdk\inc\engextcpp.cpp">
+      <Filter>dbgsdk\inc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="dbgexts.h">
-      <Filter>Header files</Filter>
-    </ClInclude>
     <ClInclude Include="windbgshark.h">
       <Filter>Header files</Filter>
-    </ClInclude>
-    <ClInclude Include="dbgsdk\inc\engextcpp.hpp">
-      <Filter>dbgsdk\inc</Filter>
-    </ClInclude>
-    <ClInclude Include="dbgsdk\inc\extsfns.h">
-      <Filter>dbgsdk\inc</Filter>
-    </ClInclude>
-    <ClInclude Include="dbgsdk\inc\wdbgexts.h">
-      <Filter>dbgsdk\inc</Filter>
-    </ClInclude>
-    <ClInclude Include="dbgsdk\inc\dbgeng.h">
-      <Filter>dbgsdk\inc</Filter>
-    </ClInclude>
-    <ClInclude Include="dbgsdk\inc\dbghelp.h">
-      <Filter>dbgsdk\inc</Filter>
     </ClInclude>
     <ClInclude Include="pcap.h">
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="utils.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\dbghelp.h">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\engextcpp.hpp">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\extsfns.h">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\wdbgexts.h">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgsdk\inc\dbgeng.h">
+      <Filter>dbgsdk\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dbgexts.h">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>

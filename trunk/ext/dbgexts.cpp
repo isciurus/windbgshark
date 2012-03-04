@@ -28,8 +28,6 @@
 
 #include "dbgexts.h"
 #include <strsafe.h>
-#include "pcap.h"
-#include "windbgshark.h"
 
 IDebugClient* pDebugClient;
 IDebugControl* pDebugControl;
@@ -43,8 +41,8 @@ WINDBG_EXTENSION_APIS   ExtensionApis;
 ULONG   TargetMachine;
 BOOL    Connected;
 
-HRESULT setBreakpoints(PDEBUG_CONTROL Control);
-HRESULT removeBreakpoints(PDEBUG_CONTROL Control);
+extern HRESULT extensionInit();
+extern void extensionUninitialize();
 
 // Queries for all debugger interfaces.
 extern "C" HRESULT
@@ -142,7 +140,7 @@ DebugExtensionInitialize(PULONG Version, PULONG Flags)
         Hr = pDebugControl->GetWindbgExtensionApis64(&ExtensionApis);
     }
 
-	Hr = windbgsharkInit();
+	Hr = extensionInit();
 
     return Hr;
 }
@@ -203,7 +201,7 @@ void
 CALLBACK
 DebugExtensionUninitialize(void)
 {
-	windbgsharkUninitialize();
+	extensionUninitialize();
     return;
 }
 
