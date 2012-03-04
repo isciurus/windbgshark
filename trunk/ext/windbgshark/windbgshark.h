@@ -27,6 +27,3 @@
 */
 
 #define myDprintf if(Debug)dprintf
-
-HRESULT extensionInit();
-void extensionUninitialize();
