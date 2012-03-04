@@ -295,6 +295,32 @@ ReinjectPendedPacket(
 	dataLength = packet->dataLength;
 	flowCtx = packet->flowContext;
 
+#ifdef DEBUG
+	debugPacket(packet);
+	DbgPrintEx(
+		DPFLTR_IHVNETWORK_ID,
+		DPFLTR_ERROR_LEVEL,
+		"\n localCtr=%d, remoteCtr=%d\n", flowCtx->localCounter, flowCtx->remoteCounter);
+#endif
+
+	// Keep correct sequence numbers
+	// (Assume every reinjection is successful, otherwise synchronous injection is
+	// needed for consistent sequence numbers implementation)
+	if(flags & FWPS_STREAM_FLAG_SEND)
+	{
+		flowCtx->localCounter += dataLength;
+	}
+	else if(flags & FWPS_STREAM_FLAG_RECEIVE)
+	{
+		flowCtx->remoteCounter += dataLength;
+	}
+	else
+	{
+#ifdef DEBUG
+		DbgBreakPoint();
+#endif
+	}
+
 	status = FwpsStreamInjectAsync(
 		gInjectionHandle,
 		NULL,
@@ -311,16 +337,6 @@ ReinjectPendedPacket(
 	if (!NT_SUCCESS(status))
 	{
 		goto Exit;
-	}
-
-	// Keep correct sequence numbers
-	if(flags & FWPS_STREAM_FLAG_SEND)
-	{
-		flowCtx->localCounter += dataLength;
-	}
-	else if(flags & FWPS_STREAM_FLAG_RECEIVE)
-	{
-		flowCtx->remoteCounter += dataLength;
 	}
 
 	// Ownership transferred
