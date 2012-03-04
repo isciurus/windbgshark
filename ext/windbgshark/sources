@@ -5,8 +5,8 @@ _NT_TARGET_VERSION=$(_NT_TARGET_VERSION_WINXP)
 
 DLLENTRY=_DllMainCRTStartup
 
-INCLUDES = dbgsdk\inc;$(INCLUDES)
-DBGSDK_LIB_PATH = dbgsdk\lib\$(TARGET_DIRECTORY)
+INCLUDES = ..\dbgsdk\inc;$(INCLUDES)
+DBGSDK_LIB_PATH = ..\dbgsdk\lib\$(TARGET_DIRECTORY)
 
 
 TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
@@ -19,7 +19,7 @@ UMTYPE=windows
 
 MSC_WARNING_LEVEL = /W4
 
-SOURCES= dbgexts.cpp		\
+SOURCES= ..\dbgexts.cpp		\
          windbgshark.cpp	\
 		 pcap.cpp			\
 		 utils.cpp			\

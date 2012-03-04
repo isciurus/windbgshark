@@ -29,7 +29,7 @@
 #include "windows.h"
 #include "SHELLAPI.H"
 
-#include "dbgexts.h"
+#include "../dbgexts.h"
 
 extern IDebugClient* pDebugClient;
 extern IDebugControl* pDebugControl;

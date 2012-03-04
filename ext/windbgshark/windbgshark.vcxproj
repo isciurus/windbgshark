@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\dbgsdk\inc\engextcpp.cpp" />
     <ClCompile Include="dbgexts.cpp" />
-    <ClCompile Include="dbgsdk\inc\engextcpp.cpp" />
     <ClCompile Include="pcap.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="windbgshark.cpp" />
@@ -33,12 +33,12 @@
     <ResourceCompile Include="windbgshark.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="dbgexts.h" />
-    <ClInclude Include="dbgsdk\inc\dbgeng.h" />
-    <ClInclude Include="dbgsdk\inc\dbghelp.h" />
-    <ClInclude Include="dbgsdk\inc\engextcpp.hpp" />
-    <ClInclude Include="dbgsdk\inc\extsfns.h" />
-    <ClInclude Include="dbgsdk\inc\wdbgexts.h" />
+    <ClInclude Include="..\dbgexts.h" />
+    <ClInclude Include="..\dbgsdk\inc\dbgeng.h" />
+    <ClInclude Include="..\dbgsdk\inc\dbghelp.h" />
+    <ClInclude Include="..\dbgsdk\inc\engextcpp.hpp" />
+    <ClInclude Include="..\dbgsdk\inc\extsfns.h" />
+    <ClInclude Include="..\dbgsdk\inc\wdbgexts.h" />
     <ClInclude Include="pcap.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windbgshark.h" />
@@ -46,6 +46,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DDC40A6E-3186-4B34-B329-2444F6C024A6}</ProjectGuid>
     <Keyword>MakeFileProj</Keyword>
+    <ProjectName>hostctl</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

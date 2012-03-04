@@ -26,7 +26,7 @@
 *
 */
 
-#include "dbgexts.h"
+#include "../dbgexts.h"
 
 void unescape(char *result, char *data)
 {
