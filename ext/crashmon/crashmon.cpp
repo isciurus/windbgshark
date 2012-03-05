@@ -49,18 +49,44 @@ void extensionUninitialize()
 	if(pDebugClient)
 	{
 		pDebugClient->Release();
-	};
+	}
 
-    if(pDebugControl)
+	if(pDebugControl)
 	{
 		pDebugControl->Release();
-	};
+	}
 }
 
-void kdbgnotifierdummy(char* aDumpFileName, char* aExeName)
+HRESULT sendIoctl(char *buffer, ULONG size)
 {
-     DebugBreak();
-};
+	HANDLE hHandle = CreateFileA( "\\\\.\\WindbgsharkDrv",
+						GENERIC_READ | GENERIC_WRITE,
+						FILE_SHARE_READ | FILE_SHARE_WRITE,
+						NULL,
+						OPEN_EXISTING,
+						FILE_ATTRIBUTE_NORMAL,
+						NULL );
+
+	dprintf("sendIoctl hHandle = %p\n", hHandle);
+	printLastError();
+
+	if(hHandle == INVALID_HANDLE_VALUE)
+	{
+		return E_FAIL;
+	}
+
+	DWORD bytesReturned = 0;
+	BOOL result = DeviceIoControl(hHandle,
+					0,
+					buffer, size,
+					NULL, 0,
+					&bytesReturned,
+					NULL );	
+
+	dprintf("sendIoctl result = %d\n", result);
+
+	return S_OK;
+}
 
 HRESULT CALLBACK
 notifykdbg(PDEBUG_CLIENT4 Client, PCSTR args)
@@ -70,36 +96,36 @@ notifykdbg(PDEBUG_CLIENT4 Client, PCSTR args)
 	if (Client->IsKernelDebuggerEnabled() == S_OK)
 	{
 		ULONG			uTargetProcessID = 0;
-		char			wDumpFileName[MAX_PATH] = {0};
+		char			cDumpFileName[2 * MAX_PATH] = {0};
 		SYSTEMTIME		stLocalTime = {0};
-		char			wLocalTime[50] = {0};
+		char			cLocalTime[50] = {0};
 
-		GetTempPath(MAX_PATH, wDumpFileName);
-		strcat(wDumpFileName, "\\windbgshark_crash_dumps");
+		GetTempPath(MAX_PATH, cDumpFileName);
+		strcat(cDumpFileName, "windbgshark_crash_dumps");
 
-		if (CreateDirectory(wDumpFileName, NULL) != TRUE)
+		if (CreateDirectory(cDumpFileName, NULL) != TRUE)
 		{
 			if (GetLastError() == ERROR_ALREADY_EXISTS)
 			{
-				strcat(wDumpFileName, "\\");
+				strcat(cDumpFileName, "\\");
 			}
 			else
 			{
-				memset(wDumpFileName, 0, MAX_PATH);
+				memset(cDumpFileName, 0, MAX_PATH);
 			}
 		}
 		else
 		{
-			strcat(wDumpFileName, "\\");
+			strcat(cDumpFileName, "\\");
 		}
 		
 		GetLocalTime(&stLocalTime);
-		sprintf(wLocalTime, "%02d%02d%02d_%02d%02d%04d", stLocalTime.wHour, stLocalTime.wMinute, stLocalTime.wSecond,
+		sprintf(cLocalTime, "%02d%02d%02d_%02d%02d%04d", stLocalTime.wHour, stLocalTime.wMinute, stLocalTime.wSecond,
 		stLocalTime.wDay, stLocalTime.wMonth, stLocalTime.wYear);
-		strcat(wDumpFileName, wLocalTime);
-		strcat(wDumpFileName, ".dmp");
+		strcat(cDumpFileName, cLocalTime);
+		strcat(cDumpFileName, ".dmp");
 
-		Client->WriteDumpFile(wDumpFileName, DEBUG_DUMP_DEFAULT);
+		Client->WriteDumpFile(cDumpFileName, DEBUG_DUMP_DEFAULT);
 
 		// Get filename
 		IDebugSystemObjects* pDebugSystemObjects = NULL;
@@ -113,6 +139,11 @@ notifykdbg(PDEBUG_CLIENT4 Client, PCSTR args)
 			pDebugSystemObjects->GetCurrentProcessExecutableName(cProcessName, MAX_PATH, &exeSize);
 			pDebugSystemObjects->Release();
 		}
+
+		strncpy(cDumpFileName + strlen(cDumpFileName) + 1, cProcessName, exeSize + 1);
+
+		dprintf("sendIoctl %s, %s\n", cDumpFileName, cProcessName);
+		sendIoctl(cDumpFileName, strlen(cDumpFileName) + 1 + strlen(cProcessName) + 1);
 	}
 
 	EXIT_API();
