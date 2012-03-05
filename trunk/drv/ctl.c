@@ -47,6 +47,9 @@ DRIVER_DISPATCH drvCtlClose;
 __drv_dispatchType(IRP_MJ_CLEANUP) 
 DRIVER_DISPATCH drvCtlCleanup;
 
+__drv_dispatchType(IRP_MJ_DEVICE_CONTROL) 
+DRIVER_DISPATCH drvCtlDeviceControl;
+
 NTSTATUS drvCtlInit(PDRIVER_OBJECT driverObject)
 	/*++
 
@@ -77,6 +80,7 @@ Return Value:
     driverObject->MajorFunction[IRP_MJ_CREATE] = drvCtlCreate;
     driverObject->MajorFunction[IRP_MJ_CLOSE] = drvCtlClose;
     driverObject->MajorFunction[IRP_MJ_CLEANUP] = drvCtlCleanup;
+	driverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = drvCtlDeviceControl;
     #pragma warning(pop)
 
     return STATUS_SUCCESS;
@@ -196,4 +200,77 @@ Return Value:
     IoCompleteRequest(irp, IO_NO_INCREMENT);
 
     return status;
+}
+
+volatile NTSTATUS onioctl_stub(PCHAR cDumpFileName, PCHAR cProcessName)
+{
+	return STATUS_SUCCESS;
+}
+
+NTSTATUS drvCtlDeviceControl (
+    IN PDEVICE_OBJECT deviceObject,
+    IN PIRP irp)
+/*++
+
+Routine Description:
+
+   Handles device IO control requests. This function drives all communication
+   between the usermode exe and this driver.
+
+Arguments:
+   
+   [in]  PDRIVER_OBJECT driverObject - Our driver.
+   [in]  IRP irp - The IO request packet to process
+
+Return Value:
+
+   STATUS_SUCCESS
+
+--*/
+{
+	NTSTATUS            status = STATUS_SUCCESS;
+	PIO_STACK_LOCATION  irpSp;
+	ULONG               ioControlCode;
+	KLOCK_QUEUE_HANDLE	lockHandle;
+
+	ULONG				size;
+	PCHAR				buffer;
+
+	ULONG				uDumpFileNameLength = 0;
+	PCHAR				cDumpFileName = NULL, cProcessName = NULL;
+
+	UNREFERENCED_PARAMETER(deviceObject);
+
+	irpSp = IoGetCurrentIrpStackLocation(irp);
+
+	size = irpSp->Parameters.DeviceIoControl.InputBufferLength;
+	buffer = (PCHAR) irp->AssociatedIrp.SystemBuffer;
+
+	if(size == 0 || buffer == 0)
+	{
+		irp->IoStatus.Information = 0L;
+		irp->IoStatus.Status = status = STATUS_INVALID_PARAMETER;
+		IoCompleteRequest(irp, IO_NO_INCREMENT);
+		return status;
+	}
+
+	cDumpFileName = buffer;
+	uDumpFileNameLength = strlen(cDumpFileName);
+
+	if(uDumpFileNameLength >= size)
+	{
+		irp->IoStatus.Information = 0L;
+		irp->IoStatus.Status = status = STATUS_INVALID_PARAMETER;
+		IoCompleteRequest(irp, IO_NO_INCREMENT);
+		return status;
+	}
+
+	cProcessName = (PCHAR) ((ULONG64) cDumpFileName + 1 + (ULONG64) uDumpFileNameLength);
+
+	onioctl_stub(cDumpFileName, cProcessName);
+
+	irp->IoStatus.Information = 0L;
+	irp->IoStatus.Status = status = STATUS_SUCCESS;
+	IoCompleteRequest(irp, IO_NO_INCREMENT);
+	return status;
 }
