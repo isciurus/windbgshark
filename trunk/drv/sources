@@ -14,6 +14,7 @@ INCLUDES=\
 
 TARGETLIBS=\
     $(DDK_LIB_PATH)\ntoskrnl.lib \
+	$(DDK_LIB_PATH)\Wdmsec.lib \
     $(DDK_LIB_PATH)\ndis.lib \
     $(DDK_LIB_PATH)\fwpkclnt.lib \
     $(SDK_LIB_PATH)\uuid.lib
