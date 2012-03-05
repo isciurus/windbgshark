@@ -34,8 +34,8 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="crashmon.def" />
     <None Include="sources" />
+    <None Include="wdbgshark_crashmon.def" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{092E185D-D7B6-4BD7-8ED7-9EFB0687E98E}</ProjectGuid>
