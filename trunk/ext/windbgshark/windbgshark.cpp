@@ -34,6 +34,8 @@ extern IDebugControl* pDebugControl;
 
 #include "pcap.h"
 
+extern WCHAR pcapFilepath[MAX_PATH];
+
 #include "utils.h"
 
 // See TARGETNAME in ../drv/sources
@@ -43,11 +45,12 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 void printLastError();
 
-IDebugBreakpoint *bpIn, *bpOut;
+IDebugBreakpoint *bpIn, *bpOut, *bpIo;
 
 HANDLE hPcapWatchdog = INVALID_HANDLE_VALUE;
 HANDLE hWatchdogTerminateEvent = INVALID_HANDLE_VALUE;
 
+HRESULT prepareDebuggingSymbols();
 HRESULT prepareDriverModule();
 
 HRESULT setBreakpoints(PDEBUG_CONTROL Control);
@@ -58,11 +61,38 @@ BOOL Debug = TRUE;
 
 #undef _CTYPE_DISABLE_MACROS
 
+
+void printIncorrectArgs(PCSTR args)
+{
+	dprintf("[windbgshark] Sorry, cannot parse arguments: %s", args);
+}
+
+void printLastError()
+{
+    LPCTSTR lpMsgBuf;
+
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) & lpMsgBuf, 0, NULL);
+
+	myDprintf(lpMsgBuf);
+
+    LocalFree((HLOCAL) lpMsgBuf);
+}
+
+
 HRESULT extensionInit()
 {
 	HRESULT result = S_OK;
 
 	myDprintf("[windbgshark] extensionInit...\n");
+
+	myDprintf("[windbgshark] prepareDebuggingSymbols...\n");
+	result = prepareDebuggingSymbols();
+	if(result != S_OK)
+	{
+		return result;
+	}
 
 	myDprintf("[windbgshark] prepareDriverModule...\n");
 	result = prepareDriverModule();
@@ -122,6 +152,10 @@ void extensionUninitialize()
 }
 
 
+
+// Extension commands
+
+
 HRESULT CALLBACK
 help(PDEBUG_CLIENT4 Client, PCSTR args)
 {
@@ -144,10 +178,6 @@ help(PDEBUG_CLIENT4 Client, PCSTR args)
 	return S_OK;
 }
 
-void printIncorrectArgs(PCSTR args)
-{
-	dprintf("[windbgshark] Sorry, cannot parse arguments: %s", args);
-}
 
 HRESULT CALLBACK
 packet(PDEBUG_CLIENT4 Client, PCSTR args)
@@ -332,8 +362,77 @@ onpacketinject(PDEBUG_CLIENT4 Client, PCSTR args)
 	return S_OK;
 }
 
-HRESULT
-prepareDriverModule()
+HRESULT CALLBACK
+onioctl(PDEBUG_CLIENT4 Client, PCSTR args)
+{
+	IDebugSymbols *pDebugSymbols = NULL;
+	pDebugClient->QueryInterface(__uuidof(IDebugSymbols), (PVOID*) &pDebugSymbols);
+
+	IDebugDataSpaces *pDebugDataSpaces = NULL;
+	pDebugClient->QueryInterface(__uuidof(IDebugDataSpaces), (PVOID*) &pDebugDataSpaces);
+
+
+	UINT64 pcDumpFileNameRva = NULL;
+	pDebugSymbols->GetOffsetByName("cDumpFileName", &pcDumpFileNameRva);
+	
+	UINT64 cDumpFileNameRva = NULL;
+	pDebugDataSpaces->ReadPointersVirtual(1, pcDumpFileNameRva, &cDumpFileNameRva);
+
+	PCHAR cDumpFileName[MAX_PATH] = {0};
+	pDebugDataSpaces->ReadVirtual(cDumpFileNameRva, cDumpFileName, sizeof(cDumpFileName), NULL);
+
+
+	UINT64 pcProcessNameRva = NULL;
+	pDebugSymbols->GetOffsetByName("cProcessName", &pcProcessNameRva);
+	
+	UINT64 cProcessNameRva = NULL;
+	pDebugDataSpaces->ReadPointersVirtual(1, pcProcessNameRva, &cProcessNameRva);
+
+	PCHAR cProcessName[MAX_PATH] = {0};
+	pDebugDataSpaces->ReadVirtual(cProcessNameRva, cProcessName, sizeof(cProcessName), NULL);
+
+
+	WCHAR crashPcapFilepath[MAX_PATH];
+	WCHAR tmpDir[MAX_PATH];
+	if(GetTempPathW(sizeof(tmpDir) / sizeof(WCHAR), tmpDir) == 0)
+	{
+		myDprintf("[windbgshark] onioctl: GetTempPathW error\n");
+		return E_FAIL;
+	}
+
+	if(GetTempFileNameW(tmpDir, L"wcr", 0, crashPcapFilepath) == 0)
+	{
+		myDprintf("[windbgshark] onioctl: GetTempFileNameW error\n");
+		return E_FAIL;
+	}
+
+	if(CopyFileW(pcapFilepath, crashPcapFilepath, FALSE) == 0)
+	{
+		myDprintf("[windbgshark] onioctl: CopyFileW error\n");
+		return E_FAIL;
+	}
+
+	CHAR crashPcapFilepathA[MAX_PATH];
+	wcstombs(crashPcapFilepathA, crashPcapFilepath, sizeof(crashPcapFilepathA));
+
+	dprintf("[windbgshark] [crash] process = %s, pcap trace on host at %s, dump on guest at %s\n",
+		cProcessName, crashPcapFilepathA, cDumpFileName);
+
+
+	if(pDebugSymbols != NULL)
+	{
+		pDebugSymbols->Release();
+	}
+
+	if(pDebugDataSpaces != NULL)
+	{
+		pDebugDataSpaces->Release();
+	}
+
+	return S_OK;
+}
+
+HRESULT prepareDebuggingSymbols()
 {
 	IDebugSymbols *pDebugSymbols = NULL;
 	pDebugClient->QueryInterface(__uuidof(IDebugSymbols), (PVOID*) &pDebugSymbols);
@@ -342,7 +441,7 @@ prepareDriverModule()
 	ULONG path_size = 0;
 	pDebugSymbols->GetSymbolPath(symbol_path, sizeof(symbol_path), &path_size);
 
-	myDprintf("[windbgshark] setDebugSymbols: symbol_path = %s\n", symbol_path);
+	myDprintf("[windbgshark] prepareDebuggingSymbols: symbol_path = %s\n", symbol_path);
 
 	CHAR modulePath[MAX_PATH] = {0};
 	GetModuleFileNameA(((HINSTANCE)&__ImageBase), modulePath, sizeof(modulePath));
@@ -355,29 +454,51 @@ prepareDriverModule()
 
 
 	// Are paths to symbols correctly set?
-
-	if(strstr(symbol_path, "windbgshark_drv_symbols_x86") == NULL)
+	
+	if(strstr(symbol_path, "windbgshark_symbols_x86") == NULL)
 	{
 		CHAR appendedSymbolPath[MAX_PATH] = {0};
 		_snprintf(
 			appendedSymbolPath,
 			sizeof(appendedSymbolPath),
-			"%swindbgshark_drv_symbols_x86",
-			modulePath);		
+			"%swindbgshark_symbols_x86",
+			modulePath);
 		pDebugSymbols->AppendSymbolPath(appendedSymbolPath);
 	}
 
-	if(strstr(symbol_path, "windbgshark_drv_symbols_x64") == NULL)
+	if(strstr(symbol_path, "windbgshark_symbols_x64") == NULL)
 	{
 		CHAR appendedSymbolPath[MAX_PATH] = {0};
 		_snprintf(
 			appendedSymbolPath,
 			sizeof(appendedSymbolPath),
-			"%swindbgshark_drv_symbols_x64",
+			"%swindbgshark_symbols_x64",
 			modulePath);		
 		pDebugSymbols->AppendSymbolPath(appendedSymbolPath);
 	}
 
+	myDprintf("[windbgshark] reloading debugging symbols\n");
+	pDebugControl->Execute(
+			DEBUG_OUTCTL_IGNORE | DEBUG_OUTCTL_NOT_LOGGED,
+				".reload "
+				DRIVER_NAME
+				"sys",
+			DEBUG_EXECUTE_NOT_LOGGED);
+
+
+	if(pDebugSymbols != NULL)
+	{
+		pDebugSymbols->Release();
+	}
+
+	return S_OK;
+}
+
+HRESULT
+prepareDriverModule()
+{
+	IDebugSymbols *pDebugSymbols = NULL;
+	pDebugClient->QueryInterface(__uuidof(IDebugSymbols), (PVOID*) &pDebugSymbols);
 
 	myDprintf("[windbgshark] checking if driver is loaded...\n");
 	ULONG moduleIdx = 0;
@@ -391,14 +512,6 @@ prepareDriverModule()
 		dprintf("[windbgshark] driver module is not loaded yet! breakpoints will be deffered until "
 			"the module is loaded\n");
 	}
-
-	myDprintf("[windbgshark] loading symbols for the driver\n");
-	pDebugControl->Execute(
-			DEBUG_OUTCTL_IGNORE | DEBUG_OUTCTL_NOT_LOGGED,
-				".reload "
-				DRIVER_NAME
-				".sys",
-			DEBUG_EXECUTE_NOT_LOGGED);
 
 
 	if(pDebugSymbols != NULL)
@@ -439,6 +552,15 @@ setBreakpoints(PDEBUG_CONTROL Control)
 	result = bpOut->SetCommand("!onpacketinject; g");
 	result = bpOut->SetFlags(DEBUG_BREAKPOINT_ENABLED);
 
+	result = Control->AddBreakpoint(
+		DEBUG_BREAKPOINT_CODE,
+		DEBUG_ANY_ID,
+		&bpIo);
+
+	result = bpIo->SetOffsetExpression("windbgshark_drv!onioctl_stub");
+	result = bpIo->SetCommand("!onioctl; g");
+	result = bpIo->SetFlags(DEBUG_BREAKPOINT_ENABLED);
+
 	return S_OK;
 }
 
@@ -449,21 +571,9 @@ removeBreakpoints(PDEBUG_CONTROL Control)
 
 	result = Control->RemoveBreakpoint(bpIn);
 	result = Control->RemoveBreakpoint(bpOut);
+	result = Control->RemoveBreakpoint(bpIo);
 
 	return S_OK;
-}
-
-void printLastError()
-{
-    LPCTSTR lpMsgBuf;
-
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) & lpMsgBuf, 0, NULL);
-
-	myDprintf(lpMsgBuf);
-
-    LocalFree((HLOCAL) lpMsgBuf);
 }
 
 
