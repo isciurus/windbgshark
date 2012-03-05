@@ -27,6 +27,7 @@
 */
 
 #include "ntddk.h"
+#include "wdmsec.h"
 
 #include "fwpsk.h"
 
@@ -47,6 +48,7 @@ PNDIS_GENERIC_OBJECT gNdisGenericObj;
 #define TAG_NBL_POOL 'pneS'
 
 #define DEVICE_NAME L"\\Device\\WindbgsharkDrv"
+#define SYMBOLIC_LINK_NAME L"\\DosDevices\\WindbgsharkDrv"
 
 DRIVER_UNLOAD DriverUnload;
 
@@ -55,9 +57,12 @@ NTSTATUS DriverEntry(
 	IN  PUNICODE_STRING registryPath)
 {
 	NTSTATUS status = STATUS_SUCCESS;
+	NTSTATUS symbolicLinkCreationStatus = STATUS_SUCCESS;
 	UNICODE_STRING deviceName;
+	UNICODE_STRING dosDeviceName;
 	HANDLE threadHandle;
 	NET_BUFFER_LIST_POOL_PARAMETERS nblPoolParams = {0};
+	UNICODE_STRING defaultSDDLString;
 
 #ifdef DEBUG
 	DbgBreakPoint();
@@ -72,21 +77,29 @@ NTSTATUS DriverEntry(
 
 	gDriverUnloading = FALSE;
 
+	RtlInitUnicodeString(&defaultSDDLString, L"D:P(A;;GA;;;BU)");
 	RtlInitUnicodeString(&deviceName, DEVICE_NAME);
 
-	status = IoCreateDevice(
+	status = IoCreateDeviceSecure(
 		driverObject, 
-		0, 
+		0,
 		&deviceName, 
 		FILE_DEVICE_NETWORK, 
 		0, 
 		FALSE, 
+		&defaultSDDLString,
+		NULL,
 		&gDeviceObject);
 
 	if (!NT_SUCCESS(status))
 	{
 		goto Exit;
 	}
+
+	RtlInitUnicodeString(&dosDeviceName, SYMBOLIC_LINK_NAME);
+
+	status = IoCreateSymbolicLink(&dosDeviceName, &deviceName);
+	symbolicLinkCreationStatus = status;
 
 	if (!NT_SUCCESS(status))
 	{
@@ -205,6 +218,11 @@ Exit:
 			IoDeleteDevice(gDeviceObject);
 		}
 
+		if(NT_SUCCESS(symbolicLinkCreationStatus))
+		{
+			IoDeleteSymbolicLink(&dosDeviceName);
+		}
+
 		if (gNetBufferListPool != NULL)
 		{
 			NdisFreeNetBufferListPool(gNetBufferListPool);
@@ -265,6 +283,9 @@ VOID DriverUnload(
 	NdisFreeGenericObject(gNdisGenericObj);
 
 	FwpsInjectionHandleDestroy0(gInjectionHandle);
+
+	RtlInitUnicodeString(&dosDeviceName, SYMBOLIC_LINK_NAME);
+	IoDeleteSymbolicLink(&dosDeviceName);
 
 	IoDeleteDevice(gDeviceObject);
 }
