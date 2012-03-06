@@ -109,7 +109,9 @@ build</NMakeReBuildCommandLine>
     <NMakeBuildCommandLine>call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk x64 win7
 cd /d $(ProjectDir)
 set INCLUDE=C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include
-build</NMakeBuildCommandLine>
+build
+cd ../..
+deploy.bat</NMakeBuildCommandLine>
     <NMakeCleanCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_amd64</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_amd64
 call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk AMD64 win7

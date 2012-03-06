@@ -28,6 +28,7 @@
 
 #include "windows.h"
 #include "SHELLAPI.H"
+#include "Winternl.h"
 
 #include "../dbgexts.h"
 
@@ -39,7 +40,13 @@ extern IDebugControl* pDebugControl;
 extern HANDLE hPcapWatchdog;
 extern HANDLE hWatchdogTerminateEvent;
 extern BOOL Debug;
+extern IDebugSymbols *pDebugSymbols;
+extern IDebugDataSpaces *pDebugDataSpaces;
+extern IDebugRegisters *pDebugRegisters;
+extern ULONG packetFastcallRegIdx;
+extern BOOLEAN is64Target;
 
+#define SIGN_EXTEND(_x_) (ULONG64)(LONG)(_x_)
 
 #include "pcap.h"
 
@@ -55,41 +62,46 @@ ULONG prevPcapSize;
 HANDLE hSharkPcap = INVALID_HANDLE_VALUE;
 HANDLE hWiresharkProcess = INVALID_HANDLE_VALUE;
 
+ULONG64 getRegisterVal(PDEBUG_VALUE Register)
+{
+	if (is64Target)
+    {
+        return Register->I64;
+    }
+
+    return SIGN_EXTEND(Register->I32);
+}
+
+typedef struct EXT_PENDED_PACKET_OFFSETS_
+{
+	ULONG dataRvaOffset;
+	ULONG dataLengthOffset;
+	ULONG allocatedBytesOffset;
+	ULONG localTimeOffset;
+	ULONG timestampOffset;
+	ULONG ipv4SrcAddrOffset;
+	ULONG srcPortOffset;
+	ULONG ipv4DstAddrOffset;
+	ULONG dstPortOffset;
+	ULONG sequenceNumberOffset;
+	ULONG acknowledgementNumberOffset;
+} EXT_PENDED_PACKET_OFFSETS;
+
+EXT_PENDED_PACKET_OFFSETS packetOffsets;
+
 typedef struct EXT_PENDED_PACKET_
 {
 	ULONG64 packetRva;
-
-	ULONG dataRvaOffset;
 	ULONG64 dataRva;
-
-	ULONG dataLengthOffset;
 	ULONG dataLength;
-
-	ULONG allocatedBytesOffset;
 	ULONG allocatedBytes;
-
-	ULONG localTimeOffset;
 	LARGE_INTEGER localTime;
-
-	ULONG timestampOffset;
 	ULONG timestamp;
-
-	ULONG ipv4SrcAddrOffset;
 	UINT32 ipv4SrcAddr;
-
-	ULONG srcPortOffset;
 	UINT16 srcPort;
-
-	ULONG ipv4DstAddrOffset;
 	UINT32 ipv4DstAddr;
-
-	ULONG dstPortOffset;
 	UINT16 dstPort;
-
-	ULONG sequenceNumberOffset;
 	UINT32 sequenceNumber;
-
-	ULONG acknowledgementNumberOffset;
 	UINT32 acknowledgementNumber;
 } EXT_PENDED_PACKET;
 
@@ -285,67 +297,44 @@ void fixCurrentPcapSize()
 	// myDprintf("[windbgshark] prevPcapSize = %p, result = %d\n", prevPcapSize, result);
 }
 
-void parsePacket(EXT_PENDED_PACKET *packet)
+HRESULT getPacketOffsets()
 {
-	IDebugSymbols *pDebugSymbols = NULL;
-	pDebugClient->QueryInterface(__uuidof(IDebugSymbols), (PVOID*) &pDebugSymbols);
-
-	IDebugDataSpaces *pDebugDataSpaces = NULL;
-	pDebugClient->QueryInterface(__uuidof(IDebugDataSpaces), (PVOID*) &pDebugDataSpaces);
-
 	ULONG packetTypeID = 0;
 	ULONG64 moduleBase = 0;
-	pDebugSymbols->GetSymbolTypeId("PENDED_PACKET", &packetTypeID, &moduleBase);
+	pDebugSymbols->GetSymbolTypeId("windbgshark_drv!PENDED_PACKET", &packetTypeID, &moduleBase);
 
-	ULONG64 pPacketRva = 0;
-	pDebugSymbols->GetOffsetByName("windbgsharkPacket", &pPacketRva);
-	pDebugDataSpaces->ReadPointersVirtual(1, pPacketRva, &packet->packetRva);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "data", &packetOffsets.dataRvaOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "dataLength", &packetOffsets.dataLengthOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "allocatedBytes", &packetOffsets.allocatedBytesOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "timestamp", &packetOffsets.timestampOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "localTime", &packetOffsets.localTimeOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "ipv4SrcAddr", &packetOffsets.ipv4SrcAddrOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "ipv4DstAddr", &packetOffsets.ipv4DstAddrOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "srcPort", &packetOffsets.srcPortOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "dstPort", &packetOffsets.dstPortOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "sequenceNumber", &packetOffsets.sequenceNumberOffset);
+	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "acknowledgementNumber", &packetOffsets.acknowledgementNumberOffset);
 
+	return S_OK;
+}
 
-	// Read windbgsharkPacket struct fields (almost gave up writing this)
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "data", &packet->dataRvaOffset);
-	pDebugDataSpaces->ReadPointersVirtual(1, packet->packetRva + packet->dataRvaOffset, &packet->dataRva);
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "dataLength", &packet->dataLengthOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->dataLengthOffset, &packet->dataLength, sizeof(packet->dataLength), NULL);
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "allocatedBytes", &packet->allocatedBytesOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->allocatedBytesOffset, &packet->allocatedBytes, sizeof(packet->allocatedBytes), NULL);
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "timestamp", &packet->timestampOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->timestampOffset, &packet->timestamp, sizeof(packet->timestamp), NULL);
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "localTime", &packet->localTimeOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->localTimeOffset, &packet->localTime, sizeof(packet->localTime), NULL);
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "ipv4SrcAddr", &packet->ipv4SrcAddrOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->ipv4SrcAddrOffset, &packet->ipv4SrcAddr, sizeof(packet->ipv4SrcAddr), NULL);
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "ipv4DstAddr", &packet->ipv4DstAddrOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->ipv4DstAddrOffset, &packet->ipv4DstAddr, sizeof(packet->ipv4DstAddr), NULL);
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "srcPort", &packet->srcPortOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->srcPortOffset, &packet->srcPort, sizeof(packet->srcPort), NULL);
+void parsePacket(EXT_PENDED_PACKET *packet)
+{
+	DEBUG_VALUE packetFastcallReg;
+	pDebugRegisters->GetValue(packetFastcallRegIdx, &packetFastcallReg);
+	packet->packetRva = getRegisterVal(&packetFastcallReg);
 	
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "dstPort", &packet->dstPortOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->dstPortOffset, &packet->dstPort, sizeof(packet->dstPort), NULL);
-
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "sequenceNumber", &packet->sequenceNumberOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->sequenceNumberOffset, &packet->sequenceNumber, sizeof(packet->sequenceNumber), NULL);
-	
-	pDebugSymbols->GetFieldOffset(moduleBase, packetTypeID, "acknowledgementNumber", &packet->acknowledgementNumberOffset);
-	pDebugDataSpaces->ReadVirtual(packet->packetRva + packet->acknowledgementNumberOffset, &packet->acknowledgementNumber, sizeof(packet->acknowledgementNumber), NULL);
-
-	if(pDebugSymbols != NULL)
-	{
-		pDebugSymbols->Release();
-	}
-
-	if(pDebugDataSpaces != NULL)
-	{
-		pDebugDataSpaces->Release();
-	}
+	pDebugDataSpaces->ReadPointersVirtual(1, packet->packetRva + packetOffsets.dataRvaOffset, &packet->dataRva);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.dataLengthOffset, &packet->dataLength, sizeof(packet->dataLength), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.allocatedBytesOffset, &packet->allocatedBytes, sizeof(packet->allocatedBytes), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.timestampOffset, &packet->timestamp, sizeof(packet->timestamp), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.localTimeOffset, &packet->localTime, sizeof(packet->localTime), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.ipv4SrcAddrOffset, &packet->ipv4SrcAddr, sizeof(packet->ipv4SrcAddr), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.ipv4DstAddrOffset, &packet->ipv4DstAddr, sizeof(packet->ipv4DstAddr), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.srcPortOffset, &packet->srcPort, sizeof(packet->srcPort), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.dstPortOffset, &packet->dstPort, sizeof(packet->dstPort), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.sequenceNumberOffset, &packet->sequenceNumber, sizeof(packet->sequenceNumber), NULL);
+	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.acknowledgementNumberOffset, &packet->acknowledgementNumber, sizeof(packet->acknowledgementNumber), NULL);
 }
 
 void composePcapRecord()
@@ -356,7 +345,7 @@ void composePcapRecord()
 
 	EXT_PENDED_PACKET packet;
 	parsePacket(&packet);
-
+	
 	if(packet.dataLength == 0)
 	{
 		myDprintf("[windbgshark] composePcapRecord: dataLength == 0, continue...\n");
@@ -369,13 +358,18 @@ void composePcapRecord()
 
 
 	pcaprec_hdr_s pcaprec_hdr;
-	
-	pcaprec_hdr.ts_sec = packet.timestamp;
+
+	FILETIME systemTimeAsFileTime, localTimeAsFileTime;
+	GetSystemTimeAsFileTime(&systemTimeAsFileTime);
+	FileTimeToLocalFileTime(&systemTimeAsFileTime, &localTimeAsFileTime);
+	RtlTimeToSecondsSince1970((PLARGE_INTEGER) &localTimeAsFileTime, (PULONG) &pcaprec_hdr.ts_sec);
 	TIME_ZONE_INFORMATION TimeZoneInfo;
 	GetTimeZoneInformation(&TimeZoneInfo);
 	pcaprec_hdr.ts_sec += TimeZoneInfo.Bias * 60;
-	
-	pcaprec_hdr.ts_usec = (packet.localTime.LowPart / 10) % 1000000;
+	SYSTEMTIME systemTime;
+	FileTimeToSystemTime(&localTimeAsFileTime, &systemTime);
+	pcaprec_hdr.ts_usec = systemTime.wMilliseconds * 1000;
+	pcaprec_hdr.ts_usec += (localTimeAsFileTime.dwLowDateTime / 10) % 1000;;
 	pcaprec_hdr.incl_len = pcapEntrySize - sizeof(pcaprec_hdr);
 	pcaprec_hdr.orig_len = pcapEntrySize - sizeof(pcaprec_hdr);
 	memcpy(pcapEntry, &pcaprec_hdr, sizeof(pcaprec_hdr));
@@ -432,9 +426,6 @@ void composePcapRecord()
 	// myDprintf("[windbgshark] pcapEntry = %x\n", pcapEntry);
 	// myDprintf("[windbgshark] buffer = %x\n", pcapEntry + sizeof(pcaprec_hdr) + sizeof(ether_hdr) + sizeof(ip_hdr) + sizeof(tcp_hdr));
 
-	IDebugDataSpaces *pDebugDataSpaces = NULL;
-	pDebugClient->QueryInterface(__uuidof(IDebugDataSpaces), (PVOID*) &pDebugDataSpaces);
-
 	if(pDebugDataSpaces->ReadVirtual(
 		packet.dataRva,
 		pcapEntry + sizeof(pcaprec_hdr) + sizeof(ether_hdr) + sizeof(ip_hdr) + sizeof(tcp_hdr),
@@ -481,10 +472,6 @@ Cleanup:
 		pcapEntry = NULL;
 	}
 
-	if(pDebugDataSpaces != NULL)
-	{
-		pDebugDataSpaces->Release();
-	}
 
 	return;
 }
@@ -567,16 +554,7 @@ void setPacketSize(UINT32 size)
 		return;
 	}
 
-	IDebugDataSpaces *pDebugDataSpaces = NULL;
-	pDebugClient->QueryInterface(__uuidof(IDebugDataSpaces), (PVOID*) &pDebugDataSpaces);
-
-	pDebugDataSpaces->WriteVirtual(packet.packetRva + packet.dataLengthOffset, (PVOID) &size, sizeof(size), NULL);
-
-
-	if(pDebugDataSpaces != NULL)
-	{
-		pDebugDataSpaces->Release();
-	}
+	pDebugDataSpaces->WriteVirtual(packet.packetRva + packetOffsets.dataLengthOffset, (PVOID) &size, sizeof(size), NULL);
 }
 
 void insertDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len)
@@ -596,9 +574,6 @@ void insertDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len)
 	}
 
 
-	IDebugDataSpaces *pDebugDataSpaces = NULL;
-	pDebugClient->QueryInterface(__uuidof(IDebugDataSpaces), (PVOID*) &pDebugDataSpaces);
-
 	packet.dataLength += len;
 
 	PBYTE data = new BYTE[packet.dataLength];	
@@ -609,14 +584,9 @@ void insertDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len)
 	memmove_s(data + offset + len, packet.dataLength - offset - len, data + offset, packet.dataLength - offset - len);
 	memmove_s(data + offset, len, (VOID*) str, len);
 
-	pDebugDataSpaces->WriteVirtual(packet.packetRva + packet.dataLengthOffset, &packet.dataLength, sizeof(packet.dataLength), NULL);
+	pDebugDataSpaces->WriteVirtual(packet.packetRva + packetOffsets.dataLengthOffset, &packet.dataLength, sizeof(packet.dataLength), NULL);
 	pDebugDataSpaces->WriteVirtual(packet.dataRva, data, packet.dataLength, NULL);
 	
-
-	if(pDebugDataSpaces != NULL)
-	{
-		pDebugDataSpaces->Release();
-	}
 
 	if(data != NULL)
 	{
@@ -634,10 +604,6 @@ void cutDataAtPacketOffset(UINT32 offset, UINT32 len)
 		return;
 	}
 
-	IDebugDataSpaces *pDebugDataSpaces = NULL;
-	pDebugClient->QueryInterface(__uuidof(IDebugDataSpaces), (PVOID*) &pDebugDataSpaces);
-
-
 	len = min(len, packet.dataLength - offset - 1);
 
 	PBYTE data = new BYTE[packet.dataLength];	
@@ -648,14 +614,8 @@ void cutDataAtPacketOffset(UINT32 offset, UINT32 len)
 	memmove_s(data + offset, packet.dataLength - offset - len, data + offset + len, packet.dataLength - offset - len);
 	packet.dataLength -= len;
 
-	pDebugDataSpaces->WriteVirtual(packet.packetRva + packet.dataLengthOffset, &packet.dataLength, sizeof(packet.dataLength), NULL);
+	pDebugDataSpaces->WriteVirtual(packet.packetRva + packetOffsets.dataLengthOffset, &packet.dataLength, sizeof(packet.dataLength), NULL);
 	pDebugDataSpaces->WriteVirtual(packet.dataRva, data, packet.dataLength, NULL);
-
-
-	if(pDebugDataSpaces != NULL)
-	{
-		pDebugDataSpaces->Release();
-	}
 
 	if(data != NULL)
 	{

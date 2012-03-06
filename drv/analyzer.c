@@ -182,12 +182,12 @@ AllocateAndInitializeStreamPendedPacket(
 	return pendedPacket;
 }
 
-volatile NTSTATUS onpacketinspect_stub(PENDED_PACKET* windbgsharkPacket)
+volatile NTSTATUS __fastcall onpacketinspect_stub(PENDED_PACKET* windbgsharkPacket)
 {
 	return STATUS_SUCCESS;
 }
 
-volatile NTSTATUS onpacketinject_stub(PENDED_PACKET* windbgsharkPacket)
+volatile NTSTATUS __fastcall onpacketinject_stub(PENDED_PACKET* windbgsharkPacket)
 {
 	return STATUS_WAIT_1;
 }
