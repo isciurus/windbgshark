@@ -27,6 +27,9 @@ goto INSTALL
 
 :INSTALL
 
+copy %subfolder%\windbgshark_drv.sys %WINDIR%\system32\drivers /Y >nul
+sc create windbgshark_drv binpath= "system32\drivers\windbgshark_drv.sys" displayname= "windbgshark_drv" start= auto type= kernel
+
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" /v Debugger /t REG_SZ /d "\"%subfolder%\windbg.exe\" -p %%ld -e %%ld -g -QY -c \".load %subfolder%\wdbgshark_crashmon;!notifykdbg\"" /f >nul
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" /v Auto /t REG_SZ /d "1" /f >nul
 reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug" /v Debugger /t REG_SZ /d "\"%subfolder%\windbg.exe\" -p %%ld -e %%ld -g -QY -c \".load %subfolder%\wdbgshark_crashmon;!notifykdbg\"" /f >nul
