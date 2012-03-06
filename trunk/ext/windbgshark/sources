@@ -11,7 +11,8 @@ DBGSDK_LIB_PATH = ..\dbgsdk\lib\$(TARGET_DIRECTORY)
 
 TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
            $(DBGSDK_LIB_PATH)\dbgeng.lib \
-		   $(SDK_LIB_PATH)\Shell32.lib
+		   $(SDK_LIB_PATH)\Shell32.lib \
+		   $(SDK_LIB_PATH)\Ntdll.lib
 
 USE_MSVCRT=1
 
