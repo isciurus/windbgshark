@@ -13,8 +13,6 @@ If %ERRORLEVEL% == 0 (
 )
 
 
-REM todo: backup old values
-
 :x86
 Set subfolder=%~dp0x86
 goto INSTALL
@@ -43,6 +41,10 @@ IF NOT %ERRORLEVEL% == 0 (
 	echo Error creating service for driver module
 	goto ERROR
 )
+
+REM AeDebug backup so that uninstall will be possible
+reg copy "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug_wdbgshrk_backup" /s /f >nul
+reg copy "HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug" "HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug_wdbgshrk_backup" /s /f >nul
 
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" /v Debugger /t REG_SZ /d "\"%subfolder%\windbg.exe\" -p %%ld -e %%ld -g -QY -c \".load %subfolder%\wdbgshark_crashmon;!notifykdbg\"" /f >nul
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" /v Auto /t REG_SZ /d "1" /f >nul
