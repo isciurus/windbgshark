@@ -647,3 +647,71 @@ void cutDataAtPacketOffset(UINT32 offset, UINT32 len)
 		delete [] data;
 	}
 }
+
+
+BOOLEAN crashmonFilterMatch(PWCHAR filter, PWCHAR full_path)
+{
+	return wildcard_match(filter, full_path)
+}
+
+
+// here you can set some rules about
+// symbols' equality
+// e.g. case insensetivity
+BOOLEAN is_equal_symbols(WCHAR a, WCHAR b)
+{
+	return a==b;
+}
+
+
+BOOLEAN wildcard_match(PWCHAR pattern, PWCHAR string)
+{
+	while(*string) 
+	{
+		switch(*pattern)
+		{
+		case '*': 
+			do 
+			{
+				++pattern;
+			}
+			while(*pattern == '*');
+
+			if(!*pattern) return TRUE;
+		
+			while(*string)
+			{
+				if(wildcard_match(pattern,string++)==TRUE)
+					return TRUE;
+			}
+			return FALSE;
+		
+		default:
+			if(*string!=*pattern)return(FALSE); break;
+		}
+
+		++pattern;
+		++string;
+	}
+
+	while (*pattern == '*') ++pattern;
+	return !*pattern;
+
+	// possible tests
+	/*
+	PWCHAR filter1 = L"C:\\*some*something.e*";
+	PWCHAR filter2 = L"*C:\\*some*something.e*";
+	PWCHAR filter3 = L"*C:\\*some*something.ed*";
+	PWCHAR filter4 = L"C:\\*some*something.e";
+	PWCHAR filter5 = L"*C:\\*somet*something.e*";
+	PWCHAR filter6 = L"C:\\*somer*something.e*";
+	PWCHAR path = L"C:\\foo\\somebar\\something.exe";
+
+	assert(wildcard_match(filter1, path));
+	assert(wildcard_match(filter2, path));
+	assert(!wildcard_match(filter3, path));
+	assert(!wildcard_match(filter4, path));
+	assert(!wildcard_match(filter5, path));
+	assert(!wildcard_match(filter6, path));
+	*/
+}
