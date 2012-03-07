@@ -547,7 +547,7 @@ HRESULT prepareDebuggingSymbols()
 			strstr(modulePath + i - 1, "x86") != NULL)
 		{
 			modulePath[i - 1] = 0;
-			dprintf("path = %s\n", modulePath);
+			myDprintf("[windbgshark] prepareDebuggingSymbols: windbgshark ./host path = %s\n", modulePath);
 			break;
 		}
 	}
@@ -557,6 +557,7 @@ HRESULT prepareDebuggingSymbols()
 	
 	if(strstr(symbol_path, "windbgshark_symbols_x86") == NULL)
 	{
+
 		CHAR appendedSymbolPath[MAX_PATH] = {0};
 		_snprintf(
 			appendedSymbolPath,
