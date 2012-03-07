@@ -29,7 +29,7 @@
 HRESULT openPcap();
 void closePcap();
 void fixCurrentPcapSize();
-void composePcapRecord();
+void composePcapRecords();
 
 void feedPcapWatchdog();
 void terminateWatchdog();
