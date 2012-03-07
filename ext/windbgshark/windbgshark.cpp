@@ -551,9 +551,15 @@ HRESULT prepareDebuggingSymbols()
 	GetModuleFileNameA(((HINSTANCE)&__ImageBase), modulePath, sizeof(modulePath));
 	myDprintf("[windbgshark] module path: %s\n", modulePath);
 
-	for(size_t i = strlen(modulePath) - 1; i > 0 && modulePath[i] != '\\'; i--)
+	for(size_t i = strlen(modulePath) - 1; i > 0; i--)
 	{
-		modulePath[i] = 0;
+		if(strstr(modulePath + i - 1, "x64") != NULL ||
+			strstr(modulePath + i - 1, "x86") != NULL)
+		{
+			modulePath[i - 1] = 0;
+			dprintf("path = %s\n", modulePath);
+			break;
+		}
 	}
 
 
