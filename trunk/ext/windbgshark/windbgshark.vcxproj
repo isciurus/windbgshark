@@ -76,6 +76,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <NMakeBuildCommandLine>call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk win7
 cd /d $(ProjectDir)
+set INCLUDE=C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include
 build</NMakeBuildCommandLine>
     <NMakeCleanCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_x86</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_x86
@@ -109,9 +110,7 @@ build</NMakeReBuildCommandLine>
     <NMakeBuildCommandLine>call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk x64 win7
 cd /d $(ProjectDir)
 set INCLUDE=C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A\Include
-build
-cd ../..
-deploy.bat</NMakeBuildCommandLine>
+build</NMakeBuildCommandLine>
     <NMakeCleanCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_amd64</NMakeCleanCommandLine>
     <NMakeReBuildCommandLine>rmdir /s /q $(ProjectDir)\objchk_win7_amd64
 call $(WDKPATH)\bin\setenv.bat $(WDKPATH) chk AMD64 win7
