@@ -65,11 +65,13 @@ IF NOT %ERRORLEVEL% == 0 (
 	goto ERROR
 )
 
+:SUCCESS
 echo Windbgshark guest module uninstalled successfully.
-pause
-exit
+goto FINISH
 
 :ERROR
 echo Windbgshark guest module not uninstalled
+goto FINISH
+
+:FINISH
 pause
-exit
