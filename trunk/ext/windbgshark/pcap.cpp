@@ -253,7 +253,7 @@ HRESULT startWireshark()
 			{
 				dprintf("[windbgshark] Error starting Wireshark. Please, ensure that Wireshark.exe "
 						"is located at %%ProgramFiles%%\\Wireshark, "
-						"%%ProgramW6432%%\\Wireshark or enywhere in %%PATH%%\n");
+						"%%ProgramW6432%%\\Wireshark or anywhere in %%PATH%%\n");
 				
 				return E_FAIL;
 			}
