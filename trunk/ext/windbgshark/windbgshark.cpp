@@ -637,13 +637,7 @@ setBreakpoints(PDEBUG_CONTROL Control)
 		DEBUG_BREAKPOINT_CODE,
 		DEBUG_ANY_ID,
 		&bpIn);
-
 	result = bpIn->SetOffsetExpression("windbgshark_drv!onpacketinspect_stub");
-
-	if(modeStepTrace)
-	{
-		result = bpIn->SetCommand("!onpacketinspect; .printf \"!packet\\n\"; !packet");
-
 	result = bpIn->SetCommand("g");
 	result = bpIn->SetFlags(DEBUG_BREAKPOINT_ENABLED);
 
@@ -651,7 +645,6 @@ setBreakpoints(PDEBUG_CONTROL Control)
 		DEBUG_BREAKPOINT_CODE,
 		DEBUG_ANY_ID,
 		&bpOut);
-
 	result = bpOut->SetOffsetExpression("windbgshark_drv!onpacketinject_stub");
 	result = bpOut->SetCommand("g");
 	result = bpOut->SetFlags(DEBUG_BREAKPOINT_ENABLED);
@@ -660,7 +653,6 @@ setBreakpoints(PDEBUG_CONTROL Control)
 		DEBUG_BREAKPOINT_CODE,
 		DEBUG_ANY_ID,
 		&bpIo);
-
 	result = bpIo->SetOffsetExpression("windbgshark_drv!onioctl_stub");
 	result = bpIo->SetCommand("!onioctl; g");
 	result = bpIo->SetFlags(DEBUG_BREAKPOINT_ENABLED);
