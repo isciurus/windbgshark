@@ -1,4 +1,4 @@
-@echo off
+rem @echo off
  
 Set RegQry=HKLM\Hardware\Description\System\CentralProcessor\0
  
@@ -25,24 +25,24 @@ goto INSTALL
 
 :INSTALL
 
-copy %subfolder%\windbgshark_drv.sys %WINDIR%\system32\drivers /Y >nul
+copy %subfolder%\windbgshark_drv.sys %WINDIR%\system32\drivers /Y
 
 IF NOT %ERRORLEVEL% == 0 (
 	echo Error copying driver module to %WINDIR%\system32\drivers
 	goto ERROR
 )
 
+REM Mostly for ERROR_SERVICE_MARKED_FOR_DELETE (1072) and The Specified Service Already Exists (1073) errors
+sc stop windbgshark_drv
+sc delete windbgshark_drv
+
 sc create windbgshark_drv binpath= "system32\drivers\windbgshark_drv.sys" displayname= "windbgshark_drv" start= auto type= kernel >nul
-IF %ERRORLEVEL% == 1073 (
-	sc delete windbgshark_drv >nul
-	sc create windbgshark_drv binpath= "system32\drivers\windbgshark_drv.sys" displayname= "windbgshark_drv" start= auto type= kernel >nul
-)
 IF NOT %ERRORLEVEL% == 0 (
 	echo Error creating service for driver module
-	goto ERROR
+	goto ERROR	
 )
 
-sc start windbgshark_drv >nul
+sc start windbgshark_drv
 IF NOT %ERRORLEVEL% == 0 (
 	echo Error starting service for driver module
 	goto ERROR
@@ -63,11 +63,13 @@ IF NOT %ERRORLEVEL% == 0 (
 	goto ERROR
 )
 
+:SUCCESS
 echo Windbgshark guest module installed successfully.
-pause
-exit
+goto FINISH
 
 :ERROR
 echo Windbgshark guest module not installed
+goto FINISH
+
+:FINISH
 pause
-exit
