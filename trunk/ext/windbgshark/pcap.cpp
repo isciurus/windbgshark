@@ -648,10 +648,11 @@ void cutDataAtPacketOffset(UINT32 offset, UINT32 len)
 	}
 }
 
+BOOLEAN wildcard_match(PWCHAR pattern, PWCHAR string);
 
 BOOLEAN crashmonFilterMatch(PWCHAR filter, PWCHAR full_path)
 {
-	return wildcard_match(filter, full_path)
+	return wildcard_match(filter, full_path);
 }
 
 
