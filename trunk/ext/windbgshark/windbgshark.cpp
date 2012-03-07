@@ -96,17 +96,7 @@ public:
         OUT PULONG Mask
     )
 	{
-		*Mask = DEBUG_EVENT_EXCEPTION | DEBUG_EVENT_BREAKPOINT;
-		return S_OK;
-	}
-    
-    STDMETHOD(Exception)(
-        THIS_
-        IN PEXCEPTION_RECORD64 Exception,
-        IN ULONG FirstChance
-    )
-	{
-		dprintf("[windbgshark] Exception\n");
+		*Mask = DEBUG_EVENT_BREAKPOINT;
 		return S_OK;
 	}
 
