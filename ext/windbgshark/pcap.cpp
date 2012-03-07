@@ -557,6 +557,31 @@ void setPacketSize(UINT32 size)
 	pDebugDataSpaces->WriteVirtual(packet.packetRva + packetOffsets.dataLengthOffset, (PVOID) &size, sizeof(size), NULL);
 }
 
+void setDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len)
+{
+	EXT_PENDED_PACKET packet;
+	parsePacket(&packet);
+
+	if(offset > packet.dataLength)
+	{
+		return;
+	}
+
+	if(len > packet.allocatedBytes || offset + len > packet.allocatedBytes)
+	{
+		dprintf("[windbgshark] Sorry, too big packet\n");
+		return;
+	}
+
+	pDebugDataSpaces->WriteVirtual(packet.dataRva + offset, (PVOID) str, len, NULL);
+
+	if(offset + len > packet.dataLength)
+	{
+		packet.dataLength = offset + len;
+		pDebugDataSpaces->WriteVirtual(packet.packetRva + packetOffsets.dataLengthOffset, &packet.dataLength, sizeof(packet.dataLength), NULL);
+	}
+}
+
 void insertDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len)
 {
 	EXT_PENDED_PACKET packet;
@@ -568,7 +593,7 @@ void insertDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len)
 		return;
 	}
 
-	if(offset >= packet.dataLength)
+	if(offset > packet.dataLength)
 	{
 		return;
 	}
@@ -604,7 +629,7 @@ void cutDataAtPacketOffset(UINT32 offset, UINT32 len)
 		return;
 	}
 
-	len = min(len, packet.dataLength - offset - 1);
+	len = min(len, packet.dataLength - offset);
 
 	PBYTE data = new BYTE[packet.dataLength];	
 	ZeroMemory(data, packet.dataLength);
