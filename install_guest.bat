@@ -25,7 +25,7 @@ goto INSTALL
 
 :INSTALL
 
-copy %subfolder%\windbgshark_drv.sys %WINDIR%\system32\drivers /Y
+copy "%subfolder%\windbgshark_drv.sys" "%WINDIR%\system32\drivers" /Y
 
 IF NOT %ERRORLEVEL% == 0 (
 	echo Error copying driver module to %WINDIR%\system32\drivers
@@ -36,7 +36,7 @@ REM Mostly for ERROR_SERVICE_MARKED_FOR_DELETE (1072) and The Specified Service 
 sc stop windbgshark_drv
 sc delete windbgshark_drv
 
-sc create windbgshark_drv binpath= "system32\drivers\windbgshark_drv.sys" displayname= "windbgshark_drv" start= auto type= kernel >nul
+sc create windbgshark_drv binpath="system32\drivers\windbgshark_drv.sys" displayname= "windbgshark_drv" start= auto type= kernel >nul
 IF NOT %ERRORLEVEL% == 0 (
 	echo Error creating service for driver module
 	goto ERROR	
