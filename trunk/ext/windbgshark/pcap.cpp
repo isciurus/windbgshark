@@ -57,6 +57,9 @@ extern BOOLEAN is64Target;
 #define guint32	UINT32
 #define gint32	INT32
 
+// To avoid writing a packet larger, than pcap fomat allows
+#define MAX_PCAP_DATA_SIZE 0xFFFF
+
 WCHAR pcapFilepath[MAX_PATH];
 ULONG prevPcapSize;
 HANDLE hSharkPcap = INVALID_HANDLE_VALUE;
@@ -337,39 +340,22 @@ void parsePacket(EXT_PENDED_PACKET *packet)
 	pDebugDataSpaces->ReadVirtual(packet->packetRva + packetOffsets.acknowledgementNumberOffset, &packet->acknowledgementNumber, sizeof(packet->acknowledgementNumber), NULL);
 }
 
-void composePcapRecord()
+
+void composePcapRecord(PBYTE fullPacketSegment, EXT_PENDED_PACKET* packet, ULONG dataOffset, ULONG dataLength, UINT32 ts_sec, UINT32 ts_usec, PULONG pcapFileOffset)
 {
 	HRESULT result;
 	ULONG pcapEntrySize = 0;
 	PBYTE pcapEntry = NULL;
 
-	EXT_PENDED_PACKET packet;
-	parsePacket(&packet);
-	
-	if(packet.dataLength == 0)
-	{
-		myDprintf("[windbgshark] composePcapRecord: dataLength == 0, continue...\n");
-		goto Cleanup;
-	}
-
-	pcapEntrySize = sizeof(pcaprec_hdr_t) + sizeof(ether_hdr_t) + sizeof(ip_hdr_t) + sizeof(tcp_hdr_t) + packet.dataLength;
+	pcapEntrySize = sizeof(pcaprec_hdr_t) + sizeof(ether_hdr_t) + sizeof(ip_hdr_t) + sizeof(tcp_hdr_t) + dataLength;
 	pcapEntry = new BYTE[pcapEntrySize];
 	memset(pcapEntry, 0, pcapEntrySize);
 
 
 	pcaprec_hdr_s pcaprec_hdr;
 
-	FILETIME systemTimeAsFileTime, localTimeAsFileTime;
-	GetSystemTimeAsFileTime(&systemTimeAsFileTime);
-	FileTimeToLocalFileTime(&systemTimeAsFileTime, &localTimeAsFileTime);
-	RtlTimeToSecondsSince1970((PLARGE_INTEGER) &localTimeAsFileTime, (PULONG) &pcaprec_hdr.ts_sec);
-	TIME_ZONE_INFORMATION TimeZoneInfo;
-	GetTimeZoneInformation(&TimeZoneInfo);
-	pcaprec_hdr.ts_sec += TimeZoneInfo.Bias * 60;
-	SYSTEMTIME systemTime;
-	FileTimeToSystemTime(&localTimeAsFileTime, &systemTime);
-	pcaprec_hdr.ts_usec = systemTime.wMilliseconds * 1000;
-	pcaprec_hdr.ts_usec += (localTimeAsFileTime.dwLowDateTime / 10) % 1000;;
+	pcaprec_hdr.ts_sec = ts_sec;
+	pcaprec_hdr.ts_usec = ts_usec;
 	pcaprec_hdr.incl_len = pcapEntrySize - sizeof(pcaprec_hdr);
 	pcaprec_hdr.orig_len = pcapEntrySize - sizeof(pcaprec_hdr);
 	memcpy(pcapEntry, &pcaprec_hdr, sizeof(pcaprec_hdr));
@@ -389,13 +375,13 @@ void composePcapRecord()
 	ip_hdr.ip_hl = 5;
 	ip_hdr.ip_v = 4;
 	ip_hdr.ip_tos = 0;
-	ip_hdr.ip_len = _byteswap_ushort(sizeof(ip_hdr) + sizeof(tcp_hdr_t) + packet.dataLength);
+	ip_hdr.ip_len = _byteswap_ushort(sizeof(ip_hdr) + sizeof(tcp_hdr_t) + dataLength);
 	ip_hdr.ip_id = 0;
 	ip_hdr.ip_off = 0;
 	ip_hdr.ip_ttl = 128;
 	ip_hdr.ip_p = 6;
-	ip_hdr.ip_src = packet.ipv4SrcAddr;
-	ip_hdr.ip_dst = packet.ipv4DstAddr;
+	ip_hdr.ip_src = packet->ipv4SrcAddr;
+	ip_hdr.ip_dst = packet->ipv4DstAddr;
 	UINT32 sum = 0;
 	for(int i = 0; i < sizeof(ip_hdr) / 2; i++)
 	{
@@ -412,10 +398,12 @@ void composePcapRecord()
 	tcp_hdr_t tcp_hdr;
 
 	memset(&tcp_hdr, 0, sizeof(tcp_hdr));	
-	tcp_hdr.source = _byteswap_ushort(packet.srcPort);
-	tcp_hdr.dest = _byteswap_ushort(packet.dstPort);
-	tcp_hdr.seq = _byteswap_ulong(packet.sequenceNumber);
-	tcp_hdr.ack_seq = _byteswap_ulong(packet.acknowledgementNumber);
+	tcp_hdr.source = _byteswap_ushort(packet->srcPort);
+	tcp_hdr.dest = _byteswap_ushort(packet->dstPort);
+	tcp_hdr.seq = _byteswap_ulong(packet->sequenceNumber);
+	tcp_hdr.ack_seq = _byteswap_ulong(packet->acknowledgementNumber);
+	// Keep correct sequence numbers
+	packet->sequenceNumber += dataLength;
 	tcp_hdr.ack = 1;
 	tcp_hdr.psh = 1;
 	tcp_hdr.doff = 5;
@@ -426,14 +414,10 @@ void composePcapRecord()
 	// myDprintf("[windbgshark] pcapEntry = %x\n", pcapEntry);
 	// myDprintf("[windbgshark] buffer = %x\n", pcapEntry + sizeof(pcaprec_hdr) + sizeof(ether_hdr) + sizeof(ip_hdr) + sizeof(tcp_hdr));
 
-	if(pDebugDataSpaces->ReadVirtual(
-		packet.dataRva,
+	RtlCopyMemory(
 		pcapEntry + sizeof(pcaprec_hdr) + sizeof(ether_hdr) + sizeof(ip_hdr) + sizeof(tcp_hdr),
-		packet.dataLength,
-		NULL) != S_OK)
-	{
-		goto Cleanup;
-	}
+		fullPacketSegment + dataOffset,
+		dataLength);
 
 	// myDprintf("[windbgshark] feedPcapWatchdog: ReadVirtual result = %d.n", result);
 
@@ -450,7 +434,7 @@ void composePcapRecord()
 	DWORD cbWritten;
 
 	memset(&overlapped, 0, sizeof(overlapped));
-	overlapped.Offset = prevPcapSize;
+	overlapped.Offset = prevPcapSize + *pcapFileOffset;
 		
 	WriteFile(
 		hSharkPcap,
@@ -461,8 +445,9 @@ void composePcapRecord()
 
 	SetEndOfFile(hSharkPcap);
 
-	myDprintf("[windbgshark] feedPcapWatchdog: wrote %d byte at offset %d\n", cbWritten, prevPcapSize);
+	*pcapFileOffset += pcapEntrySize;
 
+	myDprintf("[windbgshark] composePcapRecord: wrote %d byte at offset %d\n", cbWritten, overlapped.Offset);
 
 Cleanup:
 
@@ -476,6 +461,71 @@ Cleanup:
 	return;
 }
 
+void composePcapRecords()
+{
+	EXT_PENDED_PACKET packet;
+	parsePacket(&packet);
+	
+	if(packet.dataLength == 0)
+	{
+		myDprintf("[windbgshark] composePcapRecords: dataLength == 0, continue...\n");
+		goto Cleanup;
+	}
+
+	ULONG maxPayloadSize = MAX_PCAP_DATA_SIZE - (sizeof(pcaprec_hdr_t) + sizeof(ether_hdr_t) + sizeof(ip_hdr_t) + sizeof(tcp_hdr_t));
+	ULONG totalFramesNum = packet.dataLength / maxPayloadSize;
+	if(packet.dataLength % maxPayloadSize)
+	{
+			totalFramesNum++;
+	}
+	
+	PBYTE fullPacketSegment = new BYTE[packet.dataLength];
+
+	if(pDebugDataSpaces->ReadVirtual(
+		packet.dataRva,
+		fullPacketSegment,
+		packet.dataLength,
+		NULL) != S_OK)
+	{
+		goto Cleanup;
+	}
+
+	ULONG pcapFileOffset = 0;
+
+	for(int currFrameNum = 0; currFrameNum < totalFramesNum; currFrameNum++)
+	{
+		ULONG dataLength = maxPayloadSize;
+		if(currFrameNum == totalFramesNum - 1)
+		{
+			dataLength = packet.dataLength % maxPayloadSize;
+		}
+
+		ULONG ts_sec = 0, ts_usec = 0;
+		FILETIME systemTimeAsFileTime, localTimeAsFileTime;
+		GetSystemTimeAsFileTime(&systemTimeAsFileTime);
+		FileTimeToLocalFileTime(&systemTimeAsFileTime, &localTimeAsFileTime);
+		RtlTimeToSecondsSince1970((PLARGE_INTEGER) &localTimeAsFileTime, &ts_sec);
+		TIME_ZONE_INFORMATION TimeZoneInfo;
+		GetTimeZoneInformation(&TimeZoneInfo);
+		ts_sec += TimeZoneInfo.Bias * 60;
+		SYSTEMTIME systemTime;
+		FileTimeToSystemTime(&localTimeAsFileTime, &systemTime);
+		ts_usec = systemTime.wMilliseconds * 1000;
+		ts_usec += (localTimeAsFileTime.dwLowDateTime / 10) % 1000;
+
+		composePcapRecord(fullPacketSegment, &packet, currFrameNum * maxPayloadSize, dataLength, ts_sec, ts_usec, &pcapFileOffset);
+	}
+
+Cleanup:
+
+	if(fullPacketSegment != NULL)
+	{
+		delete [] fullPacketSegment;
+	}
+
+	return;
+}
+
 void feedPcapWatchdog()
 {
 	myDprintf("[windbgshark] feedPcapWatchdog: enter\n");
@@ -483,7 +533,7 @@ void feedPcapWatchdog()
 	do
 	{
 		myDprintf("[windbgshark] feedPcapWatchdog: loop start\n");
-		composePcapRecord();
+		composePcapRecords();
 	}
 	while(WaitForSingleObject(hWatchdogTerminateEvent, 1000) != WAIT_OBJECT_0);
 

@@ -440,7 +440,7 @@ onpacketinspect(PDEBUG_CLIENT4 Client, PCSTR args)
 
 	fixCurrentPcapSize();
 
-	composePcapRecord();
+	composePcapRecords();
 
 	if(modeStepTrace)
 	{
