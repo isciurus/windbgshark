@@ -42,7 +42,8 @@
 
 #include "debug.h"
 
-#define PACKET_EXTRA_SIZE 0x500
+// 64 KB of RAM should be enough for everybody
+#define PACKET_SIZE_OVERHEAD 0x10000
 
 void FreePendedPacket(
    IN OUT PENDED_PACKET* packet)
@@ -148,7 +149,6 @@ AllocateAndInitializeStreamPendedPacket(
 	pendedPacket->mdl = NULL;
 	
 	pendedPacket->dataLength = (ULONG) packet->streamData->dataLength;
-	pendedPacket->allocatedBytes = pendedPacket->dataLength + PACKET_EXTRA_SIZE;
 
 	if(pendedPacket->dataLength > 0)
 	{
@@ -156,7 +156,7 @@ AllocateAndInitializeStreamPendedPacket(
 		#pragma warning( suppress : 28197 )
 		pendedPacket->data = ExAllocatePoolWithTag(
 							NonPagedPool,
-							pendedPacket->allocatedBytes,
+							pendedPacket->dataLength,
 							TAG_PENDEDPACKETDATA);
 
 		if (pendedPacket->data == NULL)
@@ -165,7 +165,7 @@ AllocateAndInitializeStreamPendedPacket(
 			return NULL;
 		}
 		
-		RtlZeroMemory(pendedPacket->data, pendedPacket->allocatedBytes);
+		RtlZeroMemory(pendedPacket->data, pendedPacket->dataLength);
 
 		FwpsCopyStreamDataToBuffer0(
 			packet->streamData, 
@@ -194,6 +194,9 @@ volatile NTSTATUS __fastcall onpacketinject_stub(PENDED_PACKET* windbgsharkPacke
 
 NTSTATUS inspectPacket(PENDED_PACKET* windbgsharkPacket)
 {
+	PBYTE dataWithOverhead = NULL;
+	ULONG dataWithOverheadLength = 0;
+
 	if(windbgsharkPacket->flowContext == NULL)
 	{
 		// This means an error with callouts
@@ -220,9 +223,34 @@ NTSTATUS inspectPacket(PENDED_PACKET* windbgsharkPacket)
 	}
 
 	// If the payload is empty, no need for parsing
-	if(windbgsharkPacket->dataLength == 0)
+	if(windbgsharkPacket->dataLength == 0 || windbgsharkPacket->data == NULL)
 	{
 		return STATUS_UNSUCCESSFUL;
+	}
+
+	// Pool realloc to add an overhead to the size
+	// (user from host OS may want to add new data)
+	dataWithOverheadLength = windbgsharkPacket->dataLength + PACKET_SIZE_OVERHEAD;
+	
+	dataWithOverhead = ExAllocatePoolWithTag(
+		NonPagedPool,
+		dataWithOverheadLength,
+		TAG_PENDEDPACKETDATA);
+
+	if(dataWithOverhead != NULL)
+	{
+		RtlZeroMemory(dataWithOverhead, dataWithOverheadLength);
+
+		RtlCopyMemory(
+			dataWithOverhead,
+			windbgsharkPacket->data, 
+			windbgsharkPacket->dataLength);
+
+		ExFreePoolWithTag(windbgsharkPacket->data, TAG_PENDEDPACKETDATA);
+
+		windbgsharkPacket->data = dataWithOverhead;
+
+		windbgsharkPacket->allocatedBytes = dataWithOverheadLength;
 	}
 
 	onpacketinspect_stub(windbgsharkPacket);
