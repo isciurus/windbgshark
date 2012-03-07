@@ -42,6 +42,13 @@ IF NOT %ERRORLEVEL% == 0 (
 	goto ERROR
 )
 
+sc start windbgshark_drv >nul
+IF NOT %ERRORLEVEL% == 0 (
+	echo Error starting service for driver module
+	goto ERROR
+)
+
+
 REM AeDebug backup so that uninstall will be possible
 reg copy "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug" "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\AeDebug_wdbgshrk_backup" /s /f >nul
 reg copy "HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug" "HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\AeDebug_wdbgshrk_backup" /s /f >nul
