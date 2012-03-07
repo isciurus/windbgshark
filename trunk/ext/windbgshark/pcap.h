@@ -40,5 +40,6 @@ void stopWireshark();
 HRESULT getPacketOffsets();
 void showPacket();
 void setPacketSize(UINT32 size);
+void setDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len);
 void insertDataAtPacketOffset(UINT32 offset, PCSTR str, UINT32 len);
 void cutDataAtPacketOffset(UINT32 offset, UINT32 len);

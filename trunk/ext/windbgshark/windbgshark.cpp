@@ -127,7 +127,7 @@ public:
 
 			if(modeStepTrace)
 			{
-				dprintf("[windbghsark] !packet");
+				dprintf("[windbghsark] !packet\n");
 				showPacket();
 				return DEBUG_STATUS_BREAK;
 			}
@@ -381,8 +381,7 @@ packet(PDEBUG_CLIENT4 Client, PCSTR args)
 			char *unescapeData = new char[unescapeDataLength + 1];
 			unescape(unescapeData, endSizePtr + 1);
 			unescapeDataLength = strlen(unescapeData);
-			cutDataAtPacketOffset(offset, unescapeDataLength);
-			insertDataAtPacketOffset(offset, unescapeData, unescapeDataLength);
+			setDataAtPacketOffset(offset, unescapeData, unescapeDataLength);
 		}
 		else
 		{
