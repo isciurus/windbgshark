@@ -132,9 +132,47 @@ UINT64 CreateFlowContext(
 	KeAcquireInStackQueuedSpinLock(&flowContextListLock, &lockHandle);
 	if(!gDriverUnloading)
 	{
-		InsertTailList(&flowContextList, &flowContext->listEntry);
-		flowContext->deleting = FALSE;
-		status = STATUS_SUCCESS;
+		// Search for the pairwise localhost connection of opposite direction
+		
+		BOOLEAN pairwiseFound = FALSE;
+
+		if(flowContext->localAddressV4 == 0x7f000001 // localhost
+			&& flowContext->remoteAddressV4 == 0x7f000001 //localhost
+			&& !IsListEmpty(&flowContextList))
+		{
+			PLIST_ENTRY flowContextListEntry = NULL;
+			
+			for(flowContextListEntry = flowContextList.Flink;
+				flowContextListEntry != &flowContextList;
+				flowContextListEntry = flowContextListEntry->Flink)
+			{
+				FLOW_DATA *flowContextIter = CONTAINING_RECORD(
+						flowContextListEntry,
+						FLOW_DATA,
+						listEntry);
+
+				if(flowContextIter->ipProto == flowContext->ipProto
+					&& (flowContextIter->direction == FWP_DIRECTION_OUTBOUND && flowContext->direction == FWP_DIRECTION_INBOUND
+						|| flowContextIter->direction == FWP_DIRECTION_INBOUND && flowContext->direction == FWP_DIRECTION_OUTBOUND)
+					&& flowContextIter->localPort == flowContext->remotePort
+					&& flowContextIter->remotePort == flowContext->localPort)
+				{
+					pairwiseFound = TRUE;
+					break;
+				}
+			}
+		}
+
+		if(!pairwiseFound)
+		{
+			InsertTailList(&flowContextList, &flowContext->listEntry);
+			flowContext->deleting = FALSE;
+			status = STATUS_SUCCESS;
+		}
+		else
+		{
+			status = STATUS_UNSUCCESSFUL;
+		}
 	}
 	else
 	{
@@ -148,6 +186,7 @@ Exit:
    if (!NT_SUCCESS(status) && flowContext)
    {
       CleanupFlowContext(flowContext);
+	  flowContext = NULL;
    }
 
    return (UINT64) flowContext;
@@ -176,7 +215,7 @@ NTSTATUS drvFlowEstablishedClassify(
 
 	if (!flowContextLocal)
 	{
-		classifyOut->actionType = FWP_ACTION_CONTINUE;
+		classifyOut->actionType = FWP_ACTION_PERMIT;
 		goto cleanup;
 	}
 
