@@ -24,4 +24,5 @@ SOURCES= ..\dbgexts.cpp		\
          windbgshark.cpp	\
 		 pcap.cpp			\
 		 utils.cpp			\
-         windbgshark.rc
+         windbgshark.rc		\
+		 crashflt.cpp

@@ -45,6 +45,9 @@
     <ClCompile Include="..\dbgexts.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="crashflt.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="windbgshark.h">
@@ -72,6 +75,9 @@
       <Filter>dbgsdk\inc</Filter>
     </ClInclude>
     <ClInclude Include="..\dbgexts.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="crashflt.h">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>
