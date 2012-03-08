@@ -43,6 +43,7 @@ BOOLEAN is64Target = TRUE;
 
 extern WCHAR pcapFilepath[MAX_PATH];
 
+#include "crashflt.h"
 #include "utils.h"
 
 // See TARGETNAME in ../drv/sources
@@ -106,13 +107,13 @@ public:
         )
     {
         UNREFERENCED_PARAMETER(Bp);
-		CHAR Buffer[300] = {0};
-		HRESULT res = Bp->GetOffsetExpression(Buffer, sizeof(Buffer), NULL);
 				
 		// dprintf("[windbgshark] Breakpoint %s res = %d\n", Buffer, res);
 		
 		if(Bp == bpIn)
 		{
+			myDprintf("[windbghsark] Breakpoint in catched\n");
+
 			onpacketinspect(NULL, NULL);
 
 			if(modeStepTrace)
@@ -126,6 +127,8 @@ public:
 		} 
 		else if(Bp == bpOut)
 		{
+			myDprintf("[windbghsark] Breakpoint out catched\n");
+
 			onpacketinject(NULL, NULL);
 			//return DEBUG_STATUS_GO;
 			return DEBUG_STATUS_NO_CHANGE;
@@ -136,6 +139,8 @@ public:
 		//}
 		else
 		{
+			myDprintf("[windbghsark] Breakpoint catched\n");
+
 			return DEBUG_STATUS_NO_CHANGE;
 		}
     }
@@ -295,9 +300,16 @@ help(PDEBUG_CLIENT4 Client, PCSTR args)
 	dprintf("!packet <offset> +<string> \t insert the <string> at <offset> (enlarges the packet)\n");
 	dprintf("!packet <offset> -<size> \t remove <size> characters at <offset> (reduces packet size)\n");
 	
-	dprintf("\nHints:\n");
+	dprintf("\nHints for !strace and !packet commands:\n");
 	dprintf("- all input numbers are treated as hex\n");
-	dprintf("- all standard escape sequences (\\n, \\x41 and so on) in input strings are converterted in to the corresponding characters\n");
+	dprintf("- all standard escape sequences (\\n, \\x41 and so on) in input strings are converterted in to the corresponding characters\n\n");
+
+	dprintf("!crashflt \t\t\t show current filename filter for guest crash handler\n");
+	dprintf("!crashflt <string> \t\t set the filename filter for guest crash handler\n");
+
+	dprintf("\nHints for !crashflt command:\n");
+	dprintf("- crash is handled if process full path equals the filter string\n");
+	dprintf("- you can also use asterisk * as a wildcard character in filter\n");
 
 	return S_OK;
 }
@@ -496,36 +508,61 @@ onioctl(PDEBUG_CLIENT4 Client, PCSTR args)
 	UINT64 cProcessNameRva = NULL;
 	pDebugDataSpaces->ReadPointersVirtual(1, pcProcessNameRva, &cProcessNameRva);
 
-	PCHAR cProcessName[MAX_PATH] = {0};
+	CHAR cProcessName[MAX_PATH] = {0};
 	pDebugDataSpaces->ReadVirtual(cProcessNameRva, cProcessName, sizeof(cProcessName), NULL);
 
-
-	WCHAR crashPcapFilepath[MAX_PATH];
-	WCHAR tmpDir[MAX_PATH];
-	if(GetTempPathW(sizeof(tmpDir) / sizeof(WCHAR), tmpDir) == 0)
+	if(crashfltFilterMatch(cProcessName))
 	{
-		myDprintf("[windbgshark] onioctl: GetTempPathW error\n");
-		return E_FAIL;
+		WCHAR crashPcapFilepath[MAX_PATH + 5];
+		WCHAR tmpDir[MAX_PATH];
+		if(GetTempPathW(sizeof(tmpDir) / sizeof(WCHAR), tmpDir) == 0)
+		{
+			myDprintf("[windbgshark] onioctl: GetTempPathW error\n");
+			return E_FAIL;
+		}
+
+		if(GetTempFileNameW(tmpDir, L"wcr", 0, crashPcapFilepath) == 0)
+		{
+			myDprintf("[windbgshark] onioctl: GetTempFileNameW error\n");
+			return E_FAIL;
+		}
+
+		for(WCHAR *fileExt = crashPcapFilepath + wcslen(crashPcapFilepath) - 1;
+			fileExt > 0;
+			fileExt--)
+		{
+			if(fileExt[0] == L'.')
+			{
+				wcscpy(fileExt, L".pcap\0");
+				break;
+			}
+		}
+
+		if(CopyFileW(pcapFilepath, crashPcapFilepath, FALSE) == 0)
+		{
+			myDprintf("[windbgshark] onioctl: CopyFileW error\n");
+			return E_FAIL;
+		}
+
+		CHAR crashPcapFilepathA[MAX_PATH + 5];
+		wcstombs(crashPcapFilepathA, crashPcapFilepath, sizeof(crashPcapFilepathA));
+
+		dprintf("[windbgshark] [crash] process = %s, pcap trace on host at %s, dump on guest at %s\n",
+			cProcessName, crashPcapFilepathA, cDumpFileName);
 	}
 
-	if(GetTempFileNameW(tmpDir, L"wcr", 0, crashPcapFilepath) == 0)
+	return S_OK;
+}
+
+HRESULT CALLBACK
+crashflt(PDEBUG_CLIENT4 Client, PCSTR args)
+{
+	if(args != NULL && strlen(args) > 0)
 	{
-		myDprintf("[windbgshark] onioctl: GetTempFileNameW error\n");
-		return E_FAIL;
+		crashfltSetFilter((PCHAR) args);
 	}
 
-	if(CopyFileW(pcapFilepath, crashPcapFilepath, FALSE) == 0)
-	{
-		myDprintf("[windbgshark] onioctl: CopyFileW error\n");
-		return E_FAIL;
-	}
-
-	CHAR crashPcapFilepathA[MAX_PATH];
-	wcstombs(crashPcapFilepathA, crashPcapFilepath, sizeof(crashPcapFilepathA));
-
-	dprintf("[windbgshark] [crash] process = %s, pcap trace on host at %s, dump on guest at %s\n",
-		cProcessName, crashPcapFilepathA, cDumpFileName);
-
+	crashfltPrintFilter();
 	return S_OK;
 }
 
