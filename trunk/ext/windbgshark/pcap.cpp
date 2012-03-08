@@ -169,7 +169,7 @@ typedef struct tcp_hdr_s {
 
 HRESULT openPcap()
 {
-	WCHAR tmpDir[MAX_PATH];
+	WCHAR tmpDir[MAX_PATH + 5];
 	if(GetTempPathW(sizeof(tmpDir) / sizeof(WCHAR), tmpDir) == 0)
 	{
 		myDprintf("[windbgshark] openPcap: error\n");
@@ -180,6 +180,17 @@ HRESULT openPcap()
 	{
 		myDprintf("[windbgshark] openPcap: error\n");
 		return E_FAIL;
+	}
+
+	for(WCHAR *fileExt = pcapFilepath + wcslen(pcapFilepath) - 1;
+		fileExt > 0;
+		fileExt--)
+	{
+		if(fileExt[0] == L'.')
+		{
+			wcscpy(fileExt, L".pcap\0");
+			break;
+		}
 	}
 
 	hSharkPcap = CreateFileW(
