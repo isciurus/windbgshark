@@ -30,9 +30,6 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dbgexts.cpp">
-      <Filter>Source files</Filter>
-    </ClCompile>
     <ClCompile Include="windbgshark.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
@@ -44,6 +41,9 @@
     </ClCompile>
     <ClCompile Include="..\dbgsdk\inc\engextcpp.cpp">
       <Filter>dbgsdk\inc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dbgexts.cpp">
+      <Filter>Source files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

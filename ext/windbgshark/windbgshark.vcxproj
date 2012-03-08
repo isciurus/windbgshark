@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\dbgexts.cpp" />
     <ClCompile Include="..\dbgsdk\inc\engextcpp.cpp" />
-    <ClCompile Include="dbgexts.cpp" />
     <ClCompile Include="pcap.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="windbgshark.cpp" />
