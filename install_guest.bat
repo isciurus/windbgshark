@@ -36,7 +36,7 @@ REM Mostly for ERROR_SERVICE_MARKED_FOR_DELETE (1072) and The Specified Service 
 sc stop windbgshark_drv
 sc delete windbgshark_drv
 
-sc create windbgshark_drv binpath="system32\drivers\windbgshark_drv.sys" displayname= "windbgshark_drv" start= auto type= kernel >nul
+sc create windbgshark_drv binpath= "system32\drivers\windbgshark_drv.sys" displayname= "windbgshark_drv" start= auto type= kernel >nul
 IF NOT %ERRORLEVEL% == 0 (
 	echo Error creating service for driver module
 	goto ERROR	
