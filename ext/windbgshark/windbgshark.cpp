@@ -289,7 +289,7 @@ HRESULT CALLBACK
 help(PDEBUG_CLIENT4 Client, PCSTR args)
 {
     dprintf("Heya, I'm Windbgshark.\n\n");
-	dprintf("You may user the following commands:\n");
+	dprintf("You may use the following commands:\n");
 
 	dprintf("!strace \t\t\t show help\n");
 	dprintf("!strace \t\t\t show the current mode (step-trace or pass-through)\n");
