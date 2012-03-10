@@ -64,10 +64,18 @@ void close()
 	{
 		CloseHandle(hChildStdoutRdDup);
 	}
+#ifdef USING_PIPE
+	if(hSharkPipe != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(hSharkPipe, 0);
+	}
+#else
 	if(hSharkPcap!=INVALID_HANDLE_VALUE)
 	{	
 		CloseHandle(hSharkPcap);
 	}
+#endif
+	
 }
 
 void setPacketBpFilter(PCHAR filter)
@@ -240,10 +248,7 @@ void stopTshark()
 	{
 		TerminateProcess(hTsharkProcess, 0);
 	}
-	if(hSharkPipe != INVALID_HANDLE_VALUE)
-	{
-		TerminateProcess(hSharkPipe, 0);
-	}
+	
 }
 
 BOOLEAN restartTshark()
