@@ -1,7 +1,9 @@
 #include <Windows.h>
 
-void setPacketBpFilter(PCHAR filter);
+void init();
+void close();
 
+void setPacketBpFilter(PCHAR filter);
 BOOLEAN checkPacketUsingFilter(PBYTE packet, ULONG packetLength);
 
 //#include <string>
