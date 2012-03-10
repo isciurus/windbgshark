@@ -22,6 +22,7 @@
     <ClCompile Include="..\dbgexts.cpp" />
     <ClCompile Include="..\dbgsdk\inc\engextcpp.cpp" />
     <ClCompile Include="crashflt.cpp" />
+    <ClCompile Include="filter.cpp" />
     <ClCompile Include="pcap.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="windbgshark.cpp" />
@@ -41,6 +42,7 @@
     <ClInclude Include="..\dbgsdk\inc\extsfns.h" />
     <ClInclude Include="..\dbgsdk\inc\wdbgexts.h" />
     <ClInclude Include="crashflt.h" />
+    <ClInclude Include="filter.h" />
     <ClInclude Include="pcap.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="windbgshark.h" />
