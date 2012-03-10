@@ -48,6 +48,9 @@
     <ClCompile Include="crashflt.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="filter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="windbgshark.h">
@@ -78,6 +81,9 @@
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="crashflt.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="filter.h">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>
