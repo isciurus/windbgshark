@@ -1,9 +1,14 @@
+#include "stdafx.h"
 #include "filter.h"
-
+#define USING_PIPE
 
 PWCHAR tsharkPath = L"C:\\Program Files\\Wireshark\\tshark.exe";
 
+#ifdef USING_PIPE
+PWCHAR pcapPipeName = L"tsharkPipe";
+#else
 PWCHAR pcapFilePath = L"C:\\Users\\Ivan\\Documents\\Visual Studio 2010\\Projects\\example\\Debug\\http.cap";
+#endif
 
 #define FILTER_MAX_SIZE 1024
 #define COMMAND_MAX_SIZE 1024
@@ -14,6 +19,10 @@ HANDLE hTsharkProcess = INVALID_HANDLE_VALUE;
 HANDLE hChildStdoutWr = INVALID_HANDLE_VALUE;
 HANDLE hChildStdoutRdDup = INVALID_HANDLE_VALUE;
 HANDLE hSharkPcap = INVALID_HANDLE_VALUE;
+HANDLE hSharkPipe = INVALID_HANDLE_VALUE;
+
+HANDLE readSharkPipe = INVALID_HANDLE_VALUE;
+HANDLE writeSharkPipe = INVALID_HANDLE_VALUE;
 
 BOOLEAN restartTshark();
 
@@ -22,6 +31,17 @@ std::string getFilteredContent();
 
 void init()
 {
+#ifdef USING_PIPE
+	// Create a pipe for using with tshark
+	hSharkPipe = CreateNamedPipe(pcapPipeName, 
+		PIPE_ACCESS_OUTBOUND,  // from this to tshark
+		PIPE_TYPE_BYTE,
+		1,
+		1024,
+		1024,
+		0,
+		NULL);
+#else
 	hSharkPcap = CreateFileW(
 			pcapFilePath,
 			GENERIC_READ | GENERIC_WRITE,
@@ -30,6 +50,8 @@ void init()
 			OPEN_EXISTING,
 			FILE_ATTRIBUTE_NORMAL,
 			NULL);
+#endif
+	
 }
 
 void close()
@@ -57,7 +79,10 @@ void setPacketBpFilter(PCHAR filter)
 
 // the function compares two outputs from tshark
 // before and after appending the packet into pcap file
-
+//
+// TODO: for every packet append it to tshark active pipe
+// and after that verify output
+// add #define USING_PIPE and change the restart tshark
 BOOLEAN checkPacketUsingFilter(PBYTE packet, ULONG packetLength)
 {
 	// every packet satisfied empty filter
@@ -65,12 +90,20 @@ BOOLEAN checkPacketUsingFilter(PBYTE packet, ULONG packetLength)
 
 	std::string prev = getFilteredContent();
 
+	DWORD cbWritten;
 	
+#ifdef USING_PIPE
+	WriteFile(
+		hSharkPipe,
+		packet,
+		packetLength,
+		&cbWritten,
+		NULL);
+#else
 	// write the packet into pcap file
 	
 	SetFilePointer(hSharkPcap, 0, NULL, FILE_END);
 
-	DWORD cbWritten;
 
 	WriteFile(
 		hSharkPcap,
@@ -80,12 +113,16 @@ BOOLEAN checkPacketUsingFilter(PBYTE packet, ULONG packetLength)
 		NULL);
 	
 	SetEndOfFile(hSharkPcap);
-
-
-
 	restartTshark();
+#endif	
 
+
+	
 	std::string post = getFilteredContent();
+#ifdef USING_PIPE
+	// if no additional output then packet not matching
+	return !post.empty();
+#endif	
 	int compRes = prev.compare(post);
 
 	// if contents are equal then packet not matching 
@@ -198,9 +235,14 @@ std::string getFilteredContent()
 
 void stopTshark()
 {
+	
 	if(hTsharkProcess != INVALID_HANDLE_VALUE)
 	{
 		TerminateProcess(hTsharkProcess, 0);
+	}
+	if(hSharkPipe != INVALID_HANDLE_VALUE)
+	{
+		TerminateProcess(hSharkPipe, 0);
 	}
 }
 
@@ -214,10 +256,15 @@ BOOLEAN restartTshark()
 	wcscat_s(comm, tsharkPath);
 	wcscat_s(comm, L"\"");
 
+#ifdef USING_PIPE
+	// argument for reading from pipe
+	wcscat_s(comm, L" -i ");
+	wcscat_s(comm, pcapPipeName);
+#else
 	// argument for reading from file
 	wcscat_s(comm, L" -r \"");
 	wcscat_s(comm, pcapFilePath);
 	wcscat_s(comm, L"\"");
-
+#endif
 	return startTshark(comm);
 }
