@@ -242,7 +242,7 @@ HRESULT startWireshark()
 	SHELLEXECUTEINFOW info;
 	ZeroMemory(&info, sizeof(info));
 
-	info.cbSize = sizeof(SHELLEXECUTEINFOA);
+	info.cbSize = sizeof(SHELLEXECUTEINFOW);
 	info.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_DOENVSUBST;
 	info.hwnd = NULL;
 	info.lpVerb = NULL;
