@@ -262,6 +262,8 @@ HRESULT extensionInit()
 
 void extensionUninitialize()
 {
+	crashfltFilterCleanup();
+
 	myDprintf("[windbgshark] extensionUninitialize: calling removeBreakpoints...\n");
 	removeBreakpoints(pDebugControl);
 
