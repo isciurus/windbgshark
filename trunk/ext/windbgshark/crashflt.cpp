@@ -112,7 +112,8 @@ void crashfltPrintFilter()
 
 void crashfltSetFilter(PCHAR filter)
 {
-	crashfltFilter = (PCHAR) realloc(crashfltFilter, strlen(filter) + 1);
+	crashfltFilterCleanup();
+	crashfltFilter = new CHAR[strlen(filter) + 1];
 
 	if(crashfltFilter != NULL)
 	{
