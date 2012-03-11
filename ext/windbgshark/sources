@@ -27,4 +27,5 @@ SOURCES= ..\dbgexts.cpp		\
 		 utils.cpp			\
          windbgshark.rc		\
 		 crashflt.cpp		\
+		 filter.cpp			\
 		 mutate.cpp
