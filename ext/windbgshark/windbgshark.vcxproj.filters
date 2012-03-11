@@ -51,6 +51,9 @@
     <ClCompile Include="filter.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="mutate.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="windbgshark.h">
@@ -84,6 +87,9 @@
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="filter.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="mutate.h">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>

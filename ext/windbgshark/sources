@@ -15,6 +15,7 @@ TARGETLIBS=$(SDK_LIB_PATH)\kernel32.lib \
 		   $(SDK_LIB_PATH)\Ntdll.lib
 
 USE_MSVCRT=1
+USE_STL = 1
 
 UMTYPE=windows
 
@@ -25,4 +26,5 @@ SOURCES= ..\dbgexts.cpp		\
 		 pcap.cpp			\
 		 utils.cpp			\
          windbgshark.rc		\
-		 crashflt.cpp
+		 crashflt.cpp		\
+		 mutate.cpp

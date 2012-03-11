@@ -44,6 +44,7 @@ BOOLEAN is64Target = TRUE;
 extern WCHAR pcapFilepath[MAX_PATH];
 
 #include "crashflt.h"
+#include "mutate.h"
 #include "utils.h"
 
 // See TARGETNAME in ../drv/sources
@@ -66,6 +67,8 @@ HRESULT removeBreakpoints(PDEBUG_CONTROL Control);
 
 BOOL modeStepTrace = FALSE;
 BOOL Debug = FALSE;
+
+MutationEngine mutationEngine;
 
 #undef _CTYPE_DISABLE_MACROS
 
@@ -150,7 +153,7 @@ myEventCallbacks g_EventCb;
 
 void printIncorrectArgs(PCSTR args)
 {
-	dprintf("[windbgshark] Sorry, cannot parse arguments: %s", args);
+	dprintf("[windbgshark] Sorry, cannot parse arguments: %s\n", args);
 }
 
 void printLastError()
@@ -329,7 +332,7 @@ packet(PDEBUG_CLIENT4 Client, PCSTR args)
 		return S_OK;
 	}
 
-	// ex: !packet abc
+	// ex: !packet qqq
 	if(!isxdigit(args[0]))
 	{
 		printIncorrectArgs(args);
@@ -567,6 +570,139 @@ crashflt(PDEBUG_CLIENT4 Client, PCSTR args)
 	crashfltPrintFilter();
 	return S_OK;
 }
+
+HRESULT CALLBACK
+mutator(PDEBUG_CLIENT4 Client, PCSTR args)
+{
+	UINT32 argsLen = strlen(args);
+
+	if(args == NULL || argsLen == 0)
+	{
+		mutationEngine.printMutators();
+		return S_OK;
+	}
+	else if(args[0] == '-')
+	{
+		ULONG mutatorId = 0;
+		PCHAR endptr = (PCHAR) &args[1];
+		strtol(&args[1], &endptr, 10);
+
+		if(endptr == &args[1])
+		{
+			printIncorrectArgs(args);
+			return E_FAIL;
+		}
+
+		return mutationEngine.removeMutatorById(mutatorId);
+	}
+	else
+	{
+		LONG scriptFileLength = 0, filterLength = 0;
+		PCHAR scriptFile = NULL, filter = NULL;
+		PCHAR terminal1 = NULL, terminal2 = NULL;
+
+
+		// Parse scriptFile
+
+		if(args[0] == '\'')
+		{
+			terminal1 = strstr(&args[1], "\'");
+			
+			if(terminal1 == NULL)
+			{
+				printIncorrectArgs(args);
+				return E_FAIL;
+			}
+
+			scriptFileLength = terminal1 - args + 1;
+			scriptFile = new CHAR[scriptFileLength + 1];
+			ZeroMemory(scriptFile, scriptFileLength + 1);
+			strncpy(scriptFile, &args[1], scriptFileLength - 2);
+			terminal1++;
+		}
+		else
+		{
+			terminal1 = strstr(&args[1], " ");
+			
+			if(terminal1 == NULL)
+			{
+				terminal1 = (PCHAR) &args[argsLen];
+			}
+
+			scriptFileLength = terminal1 - args;
+			scriptFile = new CHAR[scriptFileLength + 1];
+			ZeroMemory(scriptFile, scriptFileLength + 1);
+			strncpy(scriptFile, args, scriptFileLength);
+		}
+myDprintf("scriptFile = %s\n", scriptFile);
+
+		if(terminal1 - args >= argsLen)
+		{
+
+			HRESULT res = mutationEngine.addMutator(scriptFile, NULL);
+			
+			if(scriptFile != NULL)
+			{
+				delete [] scriptFile;
+			}
+
+			return res;
+		}
+		
+		terminal1++;
+
+
+		// Parse filter
+
+		if(terminal1[0] == '\'')
+		{
+			terminal2 = strstr(&terminal1[1], "\'");
+			
+			if(terminal2 == NULL)
+			{
+				printIncorrectArgs(args);
+				return E_FAIL;
+			}
+
+			filterLength = terminal2 - terminal1 + 1;
+			filter = new CHAR[filterLength + 1];
+			ZeroMemory(filter, filterLength + 1);
+			strncpy(filter, &terminal1[1], filterLength - 2);
+		}
+		else
+		{
+			terminal2 = strstr(&terminal1[1], " ");
+			
+			if(terminal2 == NULL)
+			{
+				terminal2 = (PCHAR) &args[argsLen];
+			}
+
+			filterLength = terminal2 - terminal1;
+			filter = new CHAR[filterLength + 1];
+			ZeroMemory(filter, filterLength + 1);
+			strncpy(filter, terminal1, filterLength);
+		}
+myDprintf("filter = %s\n", filter);
+
+		HRESULT res = mutationEngine.addMutator(scriptFile, filter);
+
+		if(scriptFile != NULL)
+		{
+			delete [] scriptFile;
+		}
+
+		if(filter != NULL)
+		{
+			delete [] filter;
+		}
+
+		return res;
+	}
+	
+	return S_OK;
+}
+
 
 HRESULT prepareDebuggingSymbols()
 {
