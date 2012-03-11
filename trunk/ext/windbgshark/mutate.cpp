@@ -83,15 +83,14 @@ HRESULT Mutator::printMutator()
 MutationEngine::~MutationEngine()
 {
 	mutatorsMap::iterator mutatorIt;
-	ULONG mutatorId;
-	for(mutatorIt = _mutators.begin(), mutatorId = 0; 
-		mutatorIt != _mutators.end(); 
-		mutatorIt++, mutatorId++)
+	for(mutatorIt = _mutators.begin(); mutatorIt != _mutators.end(); mutatorIt++)
 	{
 		if((*mutatorIt).second != NULL)
 		{
 			delete (*mutatorIt).second;
 		}
+
+		_mutators.erase(mutatorIt);
 	}
 }
 
@@ -100,10 +99,7 @@ HRESULT MutationEngine::printMutators()
 	dprintf("<id> \t <script> \t\t\t\t <filter>\n");
 
 	mutatorsMap::iterator mutatorIt;
-	ULONG mutatorId;
-	for(mutatorIt = _mutators.begin(), mutatorId = 0; 
-		mutatorIt != _mutators.end(); 
-		mutatorIt++, mutatorId++)
+	for(mutatorIt = _mutators.begin(); mutatorIt != _mutators.end(); mutatorIt++)
 	{
 		if((*mutatorIt).second != NULL)
 		{
