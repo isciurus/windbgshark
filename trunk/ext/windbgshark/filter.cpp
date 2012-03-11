@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "filter.h"
 #define USING_PIPE
 
@@ -11,9 +10,9 @@ PWCHAR pcapFilePath = L"C:\\Users\\Ivan\\Documents\\Visual Studio 2010\\Projects
 #endif
 
 #define FILTER_MAX_SIZE 1024
-#define COMMAND_MAX_SIZE 1024
+#define COMMAND_MAX_SIZE 2048
 
-CHAR _filter[FILTER_MAX_SIZE];
+WCHAR _filter[FILTER_MAX_SIZE];
 
 HANDLE hTsharkProcess = INVALID_HANDLE_VALUE;
 HANDLE hChildStdoutWr = INVALID_HANDLE_VALUE;
@@ -33,7 +32,7 @@ void init()
 {
 #ifdef USING_PIPE
 	// Create a pipe for using with tshark
-	hSharkPipe = CreateNamedPipe(pcapPipeName, 
+	hSharkPipe = CreateNamedPipeW(pcapPipeName, 
 		PIPE_ACCESS_OUTBOUND,  // from this to tshark
 		PIPE_TYPE_BYTE,
 		1,
@@ -67,7 +66,7 @@ void close()
 #ifdef USING_PIPE
 	if(hSharkPipe != INVALID_HANDLE_VALUE)
 	{
-		CloseHandle(hSharkPipe, 0);
+		CloseHandle(hSharkPipe);
 	}
 #else
 	if(hSharkPcap!=INVALID_HANDLE_VALUE)
@@ -78,9 +77,9 @@ void close()
 	
 }
 
-void setPacketBpFilter(PCHAR filter)
+void setPacketBpFilter(PWCHAR filter)
 {
-	strcpy_s(_filter, filter);
+	wcscpy_s(_filter, filter);
 	
 	restartTshark();
 }
@@ -94,7 +93,7 @@ void setPacketBpFilter(PCHAR filter)
 BOOLEAN checkPacketUsingFilter(PBYTE packet, ULONG packetLength)
 {
 	// every packet satisfied empty filter
-	if(strlen(_filter) == 0) return TRUE;
+	if(wcslen(_filter) == 0) return TRUE;
 
 	std::string prev = getFilteredContent();
 
@@ -185,7 +184,7 @@ BOOLEAN startTshark(PWCHAR tsharkCommand)
 
 	//TCHAR Command[1024] = TEXT(tsharkCommand);
 	// Create the child process. 
-	fSuccess = CreateProcess(NULL, 
+	fSuccess = CreateProcessW(NULL, 
 	  tsharkCommand,  // command line 
 	  NULL,          // process security attributes 
 	  NULL,          // primary thread security attributes 
@@ -255,21 +254,39 @@ BOOLEAN restartTshark()
 {
 	stopTshark();
 	WCHAR comm[COMMAND_MAX_SIZE];
+	
+	// tshark command sample: 
+	// c:\Program Files\Wireshark\tshark.exe" -r "c:\http.cap" -T fields -e frame.number  -R udp.port==53
+	// c:\Program Files\Wireshark\tshark.exe" -i tsharkPipe	   -T fields -e frame.number  -f udp.port==53
+	// where 
+	// -r					specified file to caprure/read from
+	// -i					specified interface or pipe to caprure/read from
+	// -T fields			show captures in custom format
+	// -e frame.number		show only Layer 2 frames numbers
+	// -R					specified display filter (when reading from file)
+	// -f					specified capture filter (in case of capturing from interface or pipe)
+	
 
 	// add quotation marks for correctness
 	wcscpy_s(comm, L"\"");
 	wcscat_s(comm, tsharkPath);
-	wcscat_s(comm, L"\"");
+	wcscat_s(comm, L"\" -T fields -e frame.number");
+
 
 #ifdef USING_PIPE
 	// argument for reading from pipe
 	wcscat_s(comm, L" -i ");
 	wcscat_s(comm, pcapPipeName);
+	wcscat_s(comm, L" -f ");
+	wcscat_s(comm, _filter);
 #else
 	// argument for reading from file
 	wcscat_s(comm, L" -r \"");
 	wcscat_s(comm, pcapFilePath);
 	wcscat_s(comm, L"\"");
 #endif
+
+	
+
 	return startTshark(comm);
 }
