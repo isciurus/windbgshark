@@ -26,10 +26,41 @@
 *
 */
 
+typedef struct EXT_PENDED_PACKET_OFFSETS_
+{
+	ULONG dataRvaOffset;
+	ULONG dataLengthOffset;
+	ULONG allocatedBytesOffset;
+	ULONG localTimeOffset;
+	ULONG timestampOffset;
+	ULONG ipv4SrcAddrOffset;
+	ULONG srcPortOffset;
+	ULONG ipv4DstAddrOffset;
+	ULONG dstPortOffset;
+	ULONG sequenceNumberOffset;
+	ULONG acknowledgementNumberOffset;
+} EXT_PENDED_PACKET_OFFSETS;
+
+typedef struct EXT_PENDED_PACKET_
+{
+	ULONG64 packetRva;
+	ULONG64 dataRva;
+	ULONG dataLength;
+	ULONG allocatedBytes;
+	LARGE_INTEGER localTime;
+	ULONG timestamp;
+	UINT32 ipv4SrcAddr;
+	UINT16 srcPort;
+	UINT32 ipv4DstAddr;
+	UINT16 dstPort;
+	UINT32 sequenceNumber;
+	UINT32 acknowledgementNumber;
+} EXT_PENDED_PACKET;
+
 HRESULT openPcap();
 void closePcap();
 void fixCurrentPcapSize();
-void composePcapRecords();
+void composePcapRecords(EXT_PENDED_PACKET *packet);
 
 void feedPcapWatchdog();
 void terminateWatchdog();
