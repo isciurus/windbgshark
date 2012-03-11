@@ -75,39 +75,7 @@ ULONG64 getRegisterVal(PDEBUG_VALUE Register)
     return SIGN_EXTEND(Register->I32);
 }
 
-typedef struct EXT_PENDED_PACKET_OFFSETS_
-{
-	ULONG dataRvaOffset;
-	ULONG dataLengthOffset;
-	ULONG allocatedBytesOffset;
-	ULONG localTimeOffset;
-	ULONG timestampOffset;
-	ULONG ipv4SrcAddrOffset;
-	ULONG srcPortOffset;
-	ULONG ipv4DstAddrOffset;
-	ULONG dstPortOffset;
-	ULONG sequenceNumberOffset;
-	ULONG acknowledgementNumberOffset;
-} EXT_PENDED_PACKET_OFFSETS;
-
 EXT_PENDED_PACKET_OFFSETS packetOffsets;
-
-typedef struct EXT_PENDED_PACKET_
-{
-	ULONG64 packetRva;
-	ULONG64 dataRva;
-	ULONG dataLength;
-	ULONG allocatedBytes;
-	LARGE_INTEGER localTime;
-	ULONG timestamp;
-	UINT32 ipv4SrcAddr;
-	UINT16 srcPort;
-	UINT32 ipv4DstAddr;
-	UINT16 dstPort;
-	UINT32 sequenceNumber;
-	UINT32 acknowledgementNumber;
-} EXT_PENDED_PACKET;
-
 
 typedef struct pcap_hdr_s {
         guint32 magic_number;   /* magic number */
@@ -472,30 +440,36 @@ Cleanup:
 	return;
 }
 
-void composePcapRecords()
+void composePcapRecords(EXT_PENDED_PACKET *packet)
 {
-	EXT_PENDED_PACKET packet;
-	parsePacket(&packet);
+	if(packet == NULL)
+	{
+		dprintf("[windbgshark] error! composePcapRecords called with packet == NULL\n");
+		return;
+	}
+
+	parsePacket(packet);
 	
-	if(packet.dataLength == 0)
+	if(packet->dataLength == 0)
 	{
 		myDprintf("[windbgshark] composePcapRecords: dataLength == 0, continue...\n");
 		goto Cleanup;
 	}
 
+
 	ULONG maxPayloadSize = MAX_PCAP_DATA_SIZE - (sizeof(pcaprec_hdr_t) + sizeof(ether_hdr_t) + sizeof(ip_hdr_t) + sizeof(tcp_hdr_t));
-	ULONG totalFramesNum = packet.dataLength / maxPayloadSize;
-	if(packet.dataLength % maxPayloadSize)
+	ULONG totalFramesNum = packet->dataLength / maxPayloadSize;
+	if(packet->dataLength % maxPayloadSize)
 	{
 			totalFramesNum++;
 	}
 	
-	PBYTE fullPacketSegment = new BYTE[packet.dataLength];
+	PBYTE fullPacketSegment = new BYTE[packet->dataLength];
 
 	if(pDebugDataSpaces->ReadVirtual(
-		packet.dataRva,
+		packet->dataRva,
 		fullPacketSegment,
-		packet.dataLength,
+		packet->dataLength,
 		NULL) != S_OK)
 	{
 		goto Cleanup;
@@ -508,7 +482,7 @@ void composePcapRecords()
 		ULONG dataLength = maxPayloadSize;
 		if(currFrameNum == totalFramesNum - 1)
 		{
-			dataLength = packet.dataLength % maxPayloadSize;
+			dataLength = packet->dataLength % maxPayloadSize;
 		}
 
 		ULONG ts_sec = 0, ts_usec = 0;
@@ -524,7 +498,7 @@ void composePcapRecords()
 		ts_usec = systemTime.wMilliseconds * 1000;
 		ts_usec += (localTimeAsFileTime.dwLowDateTime / 10) % 1000;
 
-		composePcapRecord(fullPacketSegment, &packet, currFrameNum * maxPayloadSize, dataLength, ts_sec, ts_usec, &pcapFileOffset);
+		composePcapRecord(fullPacketSegment, packet, currFrameNum * maxPayloadSize, dataLength, ts_sec, ts_usec, &pcapFileOffset);
 	}
 
 Cleanup:
@@ -540,11 +514,12 @@ Cleanup:
 void feedPcapWatchdog()
 {
 	myDprintf("[windbgshark] feedPcapWatchdog: enter\n");
+	EXT_PENDED_PACKET packet;
 
 	do
 	{
 		myDprintf("[windbgshark] feedPcapWatchdog: loop start\n");
-		composePcapRecords();
+		composePcapRecords(&packet);
 	}
 	while(WaitForSingleObject(hWatchdogTerminateEvent, 1000) != WAIT_OBJECT_0);
 

@@ -39,7 +39,6 @@ public:
 	HRESULT setMutator(ULONG id, PCHAR scriptFileName, PCHAR filter);
 	HRESULT printMutator();
 
-private:
 	ULONG _id;
 	PCHAR _filter;
 	PCHAR _scriptFileName;
@@ -58,6 +57,8 @@ public:
 	HRESULT printMutators();
 	HRESULT addMutator(PCHAR scriptFileName, PCHAR filter);
 	HRESULT removeMutatorById(ULONG mutatorId);
+
+	HRESULT mutationCallback(ULONG64 packetPtr, ULONG packetLength);
 
 private:
 	mutatorsMap _mutators;

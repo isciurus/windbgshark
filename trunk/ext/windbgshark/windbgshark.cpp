@@ -457,7 +457,11 @@ onpacketinspect(PDEBUG_CLIENT4 Client, PCSTR args)
 
 	fixCurrentPcapSize();
 
-	composePcapRecords();
+	EXT_PENDED_PACKET packet;
+
+	composePcapRecords(&packet);
+
+	mutationEngine.mutationCallback(packet.dataRva, packet.dataLength);
 
 	if(modeStepTrace)
 	{

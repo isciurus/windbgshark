@@ -30,6 +30,9 @@
 
 #include "../dbgexts.h"
 
+extern IDebugControl* pDebugControl;
+
+
 #include "windbgshark.h"
 
 #include "mutate.h"
@@ -96,7 +99,7 @@ MutationEngine::~MutationEngine()
 
 HRESULT MutationEngine::printMutators()
 {
-	dprintf("<id> \t <script> \t\t\t\t <filter>\n");
+	dprintf("<id> \t <script> \t\t <filter>\n");
 
 	mutatorsMap::iterator mutatorIt;
 	for(mutatorIt = _mutators.begin(); mutatorIt != _mutators.end(); mutatorIt++)
@@ -140,7 +143,7 @@ HRESULT MutationEngine::addMutator(PCHAR scriptFileName, PCHAR filter)
 		return E_FAIL;
 	}
 
-	pMutator->setMutator(mutatorId, filter, scriptFileName);
+	pMutator->setMutator(mutatorId, scriptFileName, filter);
 
 	_mutators[mutatorId] = pMutator;
 
@@ -159,4 +162,42 @@ HRESULT MutationEngine::removeMutatorById(ULONG mutatorId)
 	}
 
 	return E_FAIL;
+}
+
+HRESULT MutationEngine::mutationCallback(ULONG64 packetPtr, ULONG packetLength)
+{
+	mutatorsMap::iterator mutatorIt;
+	for(mutatorIt = _mutators.begin(); mutatorIt != _mutators.end(); mutatorIt++)
+	{
+		if((*mutatorIt).second != NULL)
+		{
+			ULONG scriptFileNameLen = strlen((*mutatorIt).second->_scriptFileName);
+			ULONG cmdLen = scriptFileNameLen + 200;
+			PCHAR cmd = new CHAR[cmdLen];
+			ZeroMemory(cmd, cmdLen);
+
+			if(strstr(".py", &(*mutatorIt).second->_scriptFileName[scriptFileNameLen - 3]) != NULL)
+			{
+				sprintf(cmd, "!py %s %p %x %x", (*mutatorIt).second->_scriptFileName,
+					packetPtr, packetLength);
+			}
+			else if(strstr(".wds", &(*mutatorIt).second->_scriptFileName[scriptFileNameLen - 4]) != NULL)
+			{
+				sprintf(cmd, "$$>a<%s %p %x %x", (*mutatorIt).second->_scriptFileName,
+					packetPtr, packetLength);
+			}
+
+			HRESULT res = pDebugControl->Execute(
+				DEBUG_OUTCTL_ALL_CLIENTS,
+				cmd,
+				DEBUG_EXECUTE_ECHO);
+
+			delete [] cmd;
+			
+			dprintf("[windbgshark] mutator %d called, result = %d%s\n",
+				(*mutatorIt).first, res, res == S_OK ? " (S_OK)" : "");
+		}
+	}
+
+	return S_OK;
 }
