@@ -461,7 +461,11 @@ onpacketinspect(PDEBUG_CLIENT4 Client, PCSTR args)
 
 	composePcapRecords(&packet);
 
-	mutationEngine.mutationCallback(packet.dataRva, packet.dataLength);
+	// If execution was granted to any custom script, we should recompose the pcap record(s)
+	if(mutationEngine.mutationCallback(packet.dataRva, packet.dataLength) == S_OK)
+	{
+		composePcapRecords(&packet);
+	}
 
 	if(modeStepTrace)
 	{

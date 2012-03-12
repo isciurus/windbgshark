@@ -166,6 +166,7 @@ HRESULT MutationEngine::removeMutatorById(ULONG mutatorId)
 
 HRESULT MutationEngine::mutationCallback(ULONG64 packetPtr, ULONG packetLength)
 {
+	HRESULT callbackRes = E_ABORT;
 	mutatorsMap::iterator mutatorIt;
 	for(mutatorIt = _mutators.begin(); mutatorIt != _mutators.end(); mutatorIt++)
 	{
@@ -194,10 +195,12 @@ HRESULT MutationEngine::mutationCallback(ULONG64 packetPtr, ULONG packetLength)
 
 			delete [] cmd;
 			
+			callbackRes = S_OK;
+			
 			dprintf("[windbgshark] mutator %d called, result = %d%s\n",
 				(*mutatorIt).first, res, res == S_OK ? " (S_OK)" : "");
 		}
 	}
 
-	return S_OK;
+	return callbackRes;
 }
