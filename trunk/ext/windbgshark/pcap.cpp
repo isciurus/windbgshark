@@ -571,7 +571,7 @@ void showPacket()
 	parsePacket(&packet);
 
 	char cmd[0x100] = "";
-	sprintf(cmd, "db %p L%x", packet.dataRva, packet.dataLength);
+	sprintf(cmd, "db %I64p L%x", packet.dataRva, packet.dataLength);
 
 	pDebugControl->Execute(
 			DEBUG_OUTCTL_ALL_CLIENTS,
