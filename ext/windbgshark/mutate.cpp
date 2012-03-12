@@ -178,12 +178,12 @@ HRESULT MutationEngine::mutationCallback(ULONG64 packetPtr, ULONG packetLength)
 
 			if(strstr(".py", &(*mutatorIt).second->_scriptFileName[scriptFileNameLen - 3]) != NULL)
 			{
-				sprintf(cmd, "!py %s %p %x %x", (*mutatorIt).second->_scriptFileName,
+				sprintf(cmd, "!py %s %I64p %x %x", (*mutatorIt).second->_scriptFileName,
 					packetPtr, packetLength);
 			}
 			else if(strstr(".wds", &(*mutatorIt).second->_scriptFileName[scriptFileNameLen - 4]) != NULL)
 			{
-				sprintf(cmd, "$$>a<%s %p %x %x", (*mutatorIt).second->_scriptFileName,
+				sprintf(cmd, "$$>a<%s %I64p %x %x", (*mutatorIt).second->_scriptFileName,
 					packetPtr, packetLength);
 			}
 
