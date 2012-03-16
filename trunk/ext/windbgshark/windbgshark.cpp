@@ -296,7 +296,7 @@ help(PDEBUG_CLIENT4 Client, PCSTR args)
     dprintf("Heya, I'm Windbgshark.\n\n");
 	dprintf("You may use the following commands:\n");
 
-	dprintf("!strace \t\t\t show help\n");
+	dprintf("!help \t\t\t show help\n");
 	dprintf("!strace \t\t\t show the current mode (step-trace or pass-through)\n");
 	dprintf("!strace {on|off} \t\t turn on/off the step-trace mode \n");
 	dprintf("!packet \t\t\t show the current packet in hex dump \n");
@@ -315,6 +315,10 @@ help(PDEBUG_CLIENT4 Client, PCSTR args)
 	dprintf("\nHints for !crashflt command:\n");
 	dprintf("- crash is handled if process full path equals the filter string\n");
 	dprintf("- you can also use asterisk * as a wildcard character in filter\n");
+	
+	dprintf("!mutator \t\t\t show active mutators\n");
+	dprintf("!mutator <path> \t\t add a mutator script\n");
+	dprintf("!mutator -<id> \t\t remove a mutator with identificator <id>\n");
 
 	return S_OK;
 }
